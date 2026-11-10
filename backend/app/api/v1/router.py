@@ -4,7 +4,7 @@ Aggregate all v1 API routers.
 
 from fastapi import APIRouter
 
-from app.api.v1 import admin, api_keys, auth, chat, subscriptions, templates, users, integracao
+from app.api.v1 import admin, api_keys, auth, chat, integracao, subscriptions, templates, users
 
 api_router = APIRouter()
 

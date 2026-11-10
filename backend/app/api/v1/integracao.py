@@ -2,9 +2,10 @@
 """Integração com a API externa de clientes."""
 
 import os
-import httpx
 
-from fastapi import APIRouter, Depends, HTTPException, Body
+import httpx
+from fastapi import APIRouter, Body, Depends, HTTPException
+
 from app.core.dependencies import get_current_active_user
 from app.core.integration_security import gerar_token_integracao
 from app.schemas.integracao import CadastroClienteSchema, DescricaoSchema, EstadoValueSchema
