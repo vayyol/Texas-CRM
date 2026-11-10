@@ -1,4 +1,3 @@
-
 from datetime import date
 from decimal import Decimal
 
@@ -12,7 +11,6 @@ class CadastroClienteSchema(BaseModel):
     status: bool = False
 
 
-
 class DescricaoSchema(BaseModel):
     descricao: str
 
@@ -24,4 +22,3 @@ class EstadoValueSchema(BaseModel):
     quantidade: int | None = None
     data_vencimento: date | None = None
     quant_quitada: int | None = None
-

@@ -44,9 +44,11 @@ app.add_middleware(
 
 app.add_middleware(
     SessionMiddleware,
-    secret_key=settings.SESSION_SECRET.get_secret_value()
-    if settings.SESSION_SECRET
-    else settings.SECRET_KEY.get_secret_value(),
+    secret_key=(
+        settings.SESSION_SECRET.get_secret_value()
+        if settings.SESSION_SECRET
+        else settings.SECRET_KEY.get_secret_value()
+    ),
 )
 
 # ── Routes ─────────────────────────────────────────────────
@@ -73,7 +75,9 @@ async def health_ready():
 
     all_healthy = all(v == "healthy" for v in checks.values())
     if not all_healthy:
-        return JSONResponse(status_code=503, content={"status": "not ready", "checks": checks})
+        return JSONResponse(
+            status_code=503, content={"status": "not ready", "checks": checks}
+        )
 
     return {"status": "ready", "checks": checks}
 

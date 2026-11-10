@@ -1,4 +1,3 @@
-
 """Integração com a API externa de clientes."""
 
 import os
@@ -8,7 +7,11 @@ from fastapi import APIRouter, Body, Depends, HTTPException
 
 from app.core.dependencies import get_current_active_user
 from app.core.integration_security import gerar_token_integracao
-from app.schemas.integracao import CadastroClienteSchema, DescricaoSchema, EstadoValueSchema
+from app.schemas.integracao import (
+    CadastroClienteSchema,
+    DescricaoSchema,
+    EstadoValueSchema,
+)
 
 router = APIRouter()
 
@@ -53,17 +56,13 @@ async def testar_integracao(
     except httpx.HTTPStatusError as exc:
         raise HTTPException(
             status_code=502,
-            detail=(
-                "A API de clientes retornou "
-                f"HTTP {exc.response.status_code}."
-            ),
+            detail=("A API de clientes retornou " f"HTTP {exc.response.status_code}."),
         )
     except httpx.RequestError:
         raise HTTPException(
             status_code=502,
             detail="Não foi possível conectar à API de clientes.",
         )
-
 
 
 @router.post("/cadastro-cliente")
@@ -116,8 +115,6 @@ async def cadastrar_cliente(
             status_code=502,
             detail="Não foi possível conectar à API de clientes.",
         )
-
-
 
 
 @router.post("/contato-cliente/{id_client}")
@@ -173,8 +170,6 @@ async def contato_cliente(
         )
 
 
-
-
 @router.post("/interessado-cliente/{id_client}")
 async def interessado_cliente(
     id_client: int,
@@ -226,8 +221,6 @@ async def interessado_cliente(
             status_code=502,
             detail="Não foi possível conectar à API de clientes.",
         )
-
-
 
 
 @router.post("/desinteressado-cliente/{id_client}")
@@ -283,8 +276,6 @@ async def desinteressado_cliente(
         )
 
 
-
-
 @router.post("/proposta-cliente/{id_client}")
 async def proposta_cliente(
     id_client: int,
@@ -336,7 +327,6 @@ async def proposta_cliente(
             status_code=502,
             detail="Não foi possível conectar à API de clientes.",
         )
-
 
 
 @router.post("/venda-nao-realizada/{id_client}")
@@ -392,8 +382,6 @@ async def venda_nao_realizada(
         )
 
 
-
-
 @router.post("/venda-realizada/{id_client}")
 async def venda_realizada(
     id_client: int,
@@ -445,7 +433,6 @@ async def venda_realizada(
             status_code=502,
             detail="Não foi possível conectar à API de clientes.",
         )
-
 
 
 @router.post("/quitar-venda/{id_client}/{id_venda}/{quant_quitada}")
@@ -501,8 +488,8 @@ async def quitar_venda(
         )
 
 
+# ROTAS GET
 
-#ROTAS GET
 
 @router.get("/listar-clientes")
 async def listar_clientes(
@@ -764,7 +751,6 @@ async def fechar_estado(
         )
 
 
-
 @router.post("/cancelar-venda/{id_client}/{id_venda}")
 async def cancelar_venda(
     id_client: int,
@@ -818,7 +804,6 @@ async def cancelar_venda(
         )
 
 
-
 @router.get("/dashboard-acompanhamento")
 async def dashboard_acompanhamento(
     current_user=Depends(get_current_active_user),
@@ -868,7 +853,6 @@ async def dashboard_acompanhamento(
             status_code=502,
             detail="Não foi possível conectar à API de clientes.",
         )
-
 
 
 # ROTAS PARA EDITAR CLIENTES -------------------------

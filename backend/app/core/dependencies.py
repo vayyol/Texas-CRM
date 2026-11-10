@@ -90,7 +90,9 @@ async def verify_api_key_dep(
     from app.models.user import User
 
     hashed = hashlib.sha256(x_api_key.encode()).hexdigest()
-    result = await db.execute(select(APIKey).where(APIKey.hashed_key == hashed, APIKey.is_active.is_(True)))
+    result = await db.execute(
+        select(APIKey).where(APIKey.hashed_key == hashed, APIKey.is_active.is_(True))
+    )
     api_key = result.scalar_one_or_none()
     if api_key is None:
         raise HTTPException(
@@ -131,7 +133,9 @@ async def check_usage_quota(
     quota = settings.PLAN_QUOTAS.get(plan_name, settings.PLAN_QUOTAS["free"])
 
     # Count today's usage
-    today_start = datetime.combine(date.today(), datetime.min.time(), tzinfo=timezone.utc)
+    today_start = datetime.combine(
+        date.today(), datetime.min.time(), tzinfo=timezone.utc
+    )
     result = await db.execute(
         select(func.count(UsageRecord.id)).where(
             UsageRecord.user_id == current_user.id,

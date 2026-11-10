@@ -106,7 +106,9 @@ async def get_template(
     db: AsyncSession = Depends(get_db),
 ):
     """Get a template by ID. Must be public or owned by the current user."""
-    result = await db.execute(select(PromptTemplate).where(PromptTemplate.id == template_id))
+    result = await db.execute(
+        select(PromptTemplate).where(PromptTemplate.id == template_id)
+    )
     template = result.scalar_one_or_none()
 
     if not template:
@@ -136,7 +138,9 @@ async def update_template(
     db: AsyncSession = Depends(get_db),
 ):
     """Update a template. Only the owner can update it."""
-    result = await db.execute(select(PromptTemplate).where(PromptTemplate.id == template_id))
+    result = await db.execute(
+        select(PromptTemplate).where(PromptTemplate.id == template_id)
+    )
     template = result.scalar_one_or_none()
 
     if not template:
@@ -169,7 +173,9 @@ async def delete_template(
     db: AsyncSession = Depends(get_db),
 ):
     """Delete a template. Only the owner can delete it."""
-    result = await db.execute(select(PromptTemplate).where(PromptTemplate.id == template_id))
+    result = await db.execute(
+        select(PromptTemplate).where(PromptTemplate.id == template_id)
+    )
     template = result.scalar_one_or_none()
 
     if not template:
