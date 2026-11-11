@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Check, ArrowRight, ChevronDown, Sparkles } from 'lucide-react';
+import { Check, ArrowRight, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { LogoMark } from '@/components/ui/Logo';
 
 
 const plans = [
@@ -28,10 +29,8 @@ export default function PricingPage() {
       <nav className="sticky top-0 z-50 bg-surface-950/80 backdrop-blur-xl border-b border-white/5">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16">
           <Link to="/" className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center">
-              <Sparkles className="w-5 h-5 text-white" />
-            </div>
-            <span className="text-xl font-bold bg-gradient-to-r from-brand-400 to-accent-400 bg-clip-text text-transparent">NexusAI</span>
+            <LogoMark className="w-9 h-9 rounded-[25%]" />
+            <span className="text-xl font-bold bg-gradient-to-r from-brand-400 to-accent-400 bg-clip-text text-transparent">TexasCRM</span>
           </Link>
           <div className="flex items-center gap-3">
             <Link to="/login"><Button variant="ghost" size="sm" className="!text-surface-300">Sign In</Button></Link>

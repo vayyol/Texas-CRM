@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, MessageSquare, FileText, Key, CreditCard, User, Shield, Users, ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';
+import { LayoutDashboard, MessageSquare, FileText, Key, CreditCard, User, Shield, Users, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAuth } from '@/providers/AuthProvider';
+import { LogoMark } from '@/components/ui/Logo';
 
 interface SidebarProps {
   collapsed: boolean;
@@ -42,9 +43,7 @@ export function Sidebar({ collapsed, onToggle, onClose }: SidebarProps) {
     >
       {/* Logo */}
       <div className="flex items-center gap-3 px-4 py-5 border-b border-surface-100 dark:border-white/20">
-        <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 shadow-lg shadow-brand-500/25">
-          <Sparkles className="w-5 h-5 text-white" />
-        </div>
+        <LogoMark className="w-9 h-9 shrink-0 rounded-[25%] shadow-lg shadow-brand-500/25" />
         {!collapsed && (
           <span className="text-xl font-bold bg-gradient-to-r from-brand-600 to-accent-500 bg-clip-text text-transparent">
             Texas CRM

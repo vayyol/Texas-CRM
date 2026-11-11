@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Sparkles, MessageSquare, FileText, Key, BarChart3, CreditCard, Shield, Check, ArrowRight, Github, Twitter } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { LogoMark } from '@/components/ui/Logo';
 
 const features = [
   { icon: MessageSquare, title: 'AI Chat Interface', desc: 'Real-time streaming conversations with any OpenAI-compatible model. Markdown rendering, code highlighting, and conversation history.' },
@@ -30,9 +31,7 @@ export default function LandingPage() {
       <nav className="sticky top-0 z-50 bg-surface-950/80 backdrop-blur-xl border-b border-white/5">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center shadow-lg shadow-brand-500/25">
-              <Sparkles className="w-5 h-5 text-white" />
-            </div>
+            <LogoMark className="w-9 h-9 rounded-[25%] shadow-lg shadow-brand-500/25" />
             <span className="text-xl font-bold bg-gradient-to-r from-brand-400 to-accent-400 bg-clip-text text-transparent">TexasCRM</span>
           </div>
           <div className="hidden md:flex items-center gap-8">
@@ -182,7 +181,7 @@ export default function LandingPage() {
             <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-[80px]" />
             <h2 className="text-3xl sm:text-4xl font-bold mb-4 relative z-10">Ready to Get Started?</h2>
             <p className="text-brand-100 max-w-xl mx-auto mb-8 relative z-10">
-              Join thousands of developers building AI products with NexusAI. Get started in minutes.
+              Join thousands of developers building AI products with TexasCRM. Get started in minutes.
             </p>
             <Link to="/register" className="relative z-10 inline-block">
               <Button size="lg" variant="secondary" rightIcon={<ArrowRight className="w-5 h-5" />}>
@@ -199,10 +198,8 @@ export default function LandingPage() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             <div className="col-span-2 md:col-span-1">
               <div className="flex items-center gap-2 mb-4">
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center">
-                  <Sparkles className="w-4 h-4 text-white" />
-                </div>
-                <span className="font-bold bg-gradient-to-r from-brand-400 to-accent-400 bg-clip-text text-transparent">NexusAI</span>
+                <LogoMark className="w-8 h-8 rounded-[25%]" />
+                <span className="font-bold bg-gradient-to-r from-brand-400 to-accent-400 bg-clip-text text-transparent">TexasCRM</span>
               </div>
               <p className="text-sm text-surface-400">The fastest way to build AI-powered SaaS products.</p>
             </div>
@@ -231,7 +228,7 @@ export default function LandingPage() {
             </div>
           </div>
           <div className="mt-12 pt-8 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <p className="text-sm text-surface-500">&copy; {new Date().getFullYear()} NexusAI. All rights reserved.</p>
+            <p className="text-sm text-surface-500">&copy; {new Date().getFullYear()} TexasCRM. All rights reserved.</p>
             <div className="flex gap-4">
               <a href="#" className="text-surface-400 hover:text-white transition-colors"><Github className="w-5 h-5" /></a>
               <a href="#" className="text-surface-400 hover:text-white transition-colors"><Twitter className="w-5 h-5" /></a>

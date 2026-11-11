@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Sparkles } from 'lucide-react';
+import { LogoMark } from '@/components/ui/Logo';
 
 interface AuthLayoutProps {
   children: ReactNode;
@@ -19,11 +19,9 @@ export function AuthLayout({ children }: AuthLayoutProps) {
       <div className="relative z-10 w-full max-w-md mx-4 animate-fade-in">
         {/* Brand */}
         <div className="flex items-center justify-center gap-3 mb-8">
-          <div className="flex items-center justify-center w-12 h-12 rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 shadow-xl shadow-brand-500/30">
-            <Sparkles className="w-6 h-6 text-white" />
-          </div>
+          <LogoMark className="w-12 h-12 rounded-[25%] shadow-xl shadow-brand-500/30" />
           <span className="text-3xl font-bold bg-gradient-to-r from-brand-400 to-accent-400 bg-clip-text text-transparent">
-            NexusAI
+            TexasCRM
           </span>
         </div>
 

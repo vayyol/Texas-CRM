@@ -1,4 +1,4 @@
-export const APP_NAME = 'NexusAI';
+export const APP_NAME = 'TexasCRM';
 export const APP_DESCRIPTION = 'Powerful AI tools for your business';
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
 
