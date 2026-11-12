@@ -7,34 +7,79 @@ import { Card, CardBody } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 
 interface Subscription { id: string; plan_name: string; status: string; current_period_start: string | null; current_period_end: string | null; }
-interface Plan { name: string; display_name: string; price_monthly: number; features: { name: string; included: boolean }[]; is_popular: boolean; }
+interface Plan { name: string; display_name: string; price_monthly: number; price_id: string | null; features: { name: string; included: boolean }[]; is_popular: boolean; }
 
 export default function BillingPage() {
   const [sub, setSub] = useState<Subscription | null>(null);
   const [plans, setPlans] = useState<Plan[]>([]);
 
   useEffect(() => {
-    api.get<Subscription>('/api/v1/subscriptions/current').then(r => setSub(r.data)).catch(() => {});
+    api.get<Subscription>('/api/v1/subscriptions/current').then(r => setSub(r.data)).catch(() => { });
     api.get<Plan[]>('/api/v1/subscriptions/plans').then(r => setPlans(r.data || [])).catch(() => {
+
       setPlans([
-        { name: 'free', display_name: 'Free', price_monthly: 0, is_popular: false, features: [{ name: '50 API calls/day', included: true }, { name: '5 conversations', included: true }, { name: '3 templates', included: true }] },
-        { name: 'pro', display_name: 'Pro', price_monthly: 29, is_popular: true, features: [{ name: '1,000 API calls/day', included: true }, { name: 'Unlimited conversations', included: true }, { name: 'Unlimited templates', included: true }, { name: 'Priority support', included: true }] },
-        { name: 'enterprise', display_name: 'Enterprise', price_monthly: 99, is_popular: false, features: [{ name: '10,000 API calls/day', included: true }, { name: 'Everything in Pro', included: true }, { name: 'Admin dashboard', included: true }, { name: 'SLA guarantee', included: true }] },
+        {
+          name: 'free',
+          display_name: 'Free',
+          price_monthly: 0,
+          price_id: null,
+          is_popular: false,
+          features: [
+            { name: '50 API calls/day', included: true },
+            { name: '5 conversations', included: true },
+            { name: '3 templates', included: true }
+          ]
+        },
+        {
+          name: 'pro',
+          display_name: 'Pro',
+          price_monthly: 24.90,
+          price_id: 'price_1UaltqRruCfBuFHNt2bQ1kBM',
+          is_popular: true,
+          features: [
+            { name: '1,000 API calls/day', included: true },
+            { name: 'Unlimited conversations', included: true },
+            { name: 'Unlimited templates', included: true },
+            { name: 'Priority support', included: true }
+          ]
+        },
+        {
+          name: 'enterprise',
+          display_name: 'Enterprise',
+          price_monthly: 99,
+          price_id: null,
+          is_popular: false,
+          features: [
+            { name: '10,000 API calls/day', included: true },
+            { name: 'Everything in Pro', included: true },
+            { name: 'Admin dashboard', included: true },
+            { name: 'SLA guarantee', included: true }
+          ]
+        }
       ]);
+
     });
   }, []);
 
   const currentPlan = sub?.plan_name || 'free';
 
-  const handleUpgrade = async (planName: string) => {
+  const handleUpgrade = async (plan: Plan) => {
+    if (!plan.price_id) {
+      toast.error('Este plano não está disponível para contratação');
+      return;
+    }
+
     try {
       const r = await api.post('/api/v1/subscriptions/checkout', {
-        price_id: planName === 'pro' ? 'price_pro' : 'price_enterprise',
+        price_id: plan.price_id,
         success_url: `${window.location.origin}/settings/billing?success=true`,
         cancel_url: `${window.location.origin}/settings/billing`,
       });
+
       window.location.href = r.data.checkout_url;
-    } catch { toast.error('Failed to start checkout'); }
+    } catch {
+      toast.error('Failed to start checkout');
+    }
   };
 
   const handlePortal = async () => {
@@ -94,7 +139,7 @@ export default function BillingPage() {
                 <Button
                   variant={plan.is_popular ? 'primary' : 'outline'}
                   className="w-full"
-                  onClick={() => handleUpgrade(plan.name)}
+                  onClick={() => handleUpgrade(plan)}
                 >
                   {plan.price_monthly > (plans.find(p => p.name === currentPlan)?.price_monthly || 0) ? 'Upgrade' : 'Switch'}
                 </Button>
