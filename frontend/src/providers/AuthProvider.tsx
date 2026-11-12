@@ -73,7 +73,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const loginWithGoogle = () => {
-    window.location.href = '/api/v1/auth/google/login';
+    window.location.href = `${import.meta.env.VITE_API_BASE_URL}/api/v1/auth/google/login`;
   };
 
   const updateUser = (data: Partial<User>) => {
