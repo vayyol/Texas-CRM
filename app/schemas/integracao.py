@@ -1,7 +1,7 @@
+from datetime import date
+from decimal import Decimal
 
 from pydantic import BaseModel
-from decimal import Decimal
-from datetime import date
 
 
 class CadastroClienteSchema(BaseModel):
@@ -9,7 +9,6 @@ class CadastroClienteSchema(BaseModel):
     email: str | None = None
     telefone: str
     status: bool = False
-
 
 
 class DescricaoSchema(BaseModel):
@@ -23,4 +22,3 @@ class EstadoValueSchema(BaseModel):
     quantidade: int | None = None
     data_vencimento: date | None = None
     quant_quitada: int | None = None
-

@@ -1,12 +1,15 @@
-
 """Integração com a API externa de clientes."""
 
 import os
-import httpx
 
-from fastapi import APIRouter, Depends, HTTPException, Body
+import httpx
+from fastapi import APIRouter, Body, Depends, HTTPException
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.core.dependencies import get_current_active_user
 from app.core.integration_security import gerar_token_integracao
+from app.core.plans import FREE_CLIENT_LIMIT, get_user_plan
+from app.database import get_db
 from app.schemas.integracao import CadastroClienteSchema, DescricaoSchema, EstadoValueSchema
 
 router = APIRouter()
@@ -52,10 +55,7 @@ async def testar_integracao(
     except httpx.HTTPStatusError as exc:
         raise HTTPException(
             status_code=502,
-            detail=(
-                "A API de clientes retornou "
-                f"HTTP {exc.response.status_code}."
-            ),
+            detail=(f"A API de clientes retornou HTTP {exc.response.status_code}."),
         )
     except httpx.RequestError:
         raise HTTPException(
@@ -64,11 +64,11 @@ async def testar_integracao(
         )
 
 
-
 @router.post("/cadastro-cliente")
 async def cadastrar_cliente(
     schema: CadastroClienteSchema,
     current_user=Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
 ):
     api_url = os.getenv(
         "CLIENTES_API_URL",
@@ -87,6 +87,31 @@ async def cadastrar_cliente(
 
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
+            # Plano free: limite de clientes (conta ativos e inativos).
+            plano = await get_user_plan(db, current_user.id)
+            if plano == "free":
+                listagem = await client.get(
+                    f"{api_url}/order/listar-clientes",
+                    headers={
+                        "X-API-Key": api_key,
+                        "X-User-Token": token,
+                    },
+                )
+                total_clientes = 0
+                if listagem.status_code != 404:
+                    listagem.raise_for_status()
+                    dados = listagem.json()
+                    total_clientes = len(dados) if isinstance(dados, list) else 0
+
+                if total_clientes >= FREE_CLIENT_LIMIT:
+                    raise HTTPException(
+                        status_code=403,
+                        detail=(
+                            f"O plano Free permite cadastrar até {FREE_CLIENT_LIMIT} "
+                            "clientes. Faça upgrade para cadastrar mais."
+                        ),
+                    )
+
             response = await client.post(
                 f"{api_url}/order/cadastro-cliente",
                 headers={
@@ -115,8 +140,6 @@ async def cadastrar_cliente(
             status_code=502,
             detail="Não foi possível conectar à API de clientes.",
         )
-
-
 
 
 @router.post("/contato-cliente/{id_client}")
@@ -172,8 +195,6 @@ async def contato_cliente(
         )
 
 
-
-
 @router.post("/interessado-cliente/{id_client}")
 async def interessado_cliente(
     id_client: int,
@@ -225,8 +246,6 @@ async def interessado_cliente(
             status_code=502,
             detail="Não foi possível conectar à API de clientes.",
         )
-
-
 
 
 @router.post("/desinteressado-cliente/{id_client}")
@@ -282,8 +301,6 @@ async def desinteressado_cliente(
         )
 
 
-
-
 @router.post("/proposta-cliente/{id_client}")
 async def proposta_cliente(
     id_client: int,
@@ -335,7 +352,6 @@ async def proposta_cliente(
             status_code=502,
             detail="Não foi possível conectar à API de clientes.",
         )
-
 
 
 @router.post("/venda-nao-realizada/{id_client}")
@@ -391,8 +407,6 @@ async def venda_nao_realizada(
         )
 
 
-
-
 @router.post("/venda-realizada/{id_client}")
 async def venda_realizada(
     id_client: int,
@@ -444,7 +458,6 @@ async def venda_realizada(
             status_code=502,
             detail="Não foi possível conectar à API de clientes.",
         )
-
 
 
 @router.post("/quitar-venda/{id_client}/{id_venda}/{quant_quitada}")
@@ -500,8 +513,8 @@ async def quitar_venda(
         )
 
 
+# ROTAS GET
 
-#ROTAS GET
 
 @router.get("/listar-clientes")
 async def listar_clientes(
@@ -763,7 +776,6 @@ async def fechar_estado(
         )
 
 
-
 @router.post("/cancelar-venda/{id_client}/{id_venda}")
 async def cancelar_venda(
     id_client: int,
@@ -817,7 +829,6 @@ async def cancelar_venda(
         )
 
 
-
 @router.get("/dashboard-acompanhamento")
 async def dashboard_acompanhamento(
     current_user=Depends(get_current_active_user),
@@ -867,7 +878,6 @@ async def dashboard_acompanhamento(
             status_code=502,
             detail="Não foi possível conectar à API de clientes.",
         )
-
 
 
 # ROTAS PARA EDITAR CLIENTES -------------------------

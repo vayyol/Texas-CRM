@@ -30,7 +30,6 @@ def create_customer(email: str, name: str | None = None) -> str:
     return customer.id
 
 
-
 def create_checkout_session(customer_id: str, price_id: str, success_url: str, cancel_url: str) -> str:
     """Create a Stripe Checkout session for a subscription and return the URL."""
     session = stripe.checkout.Session.create(
@@ -41,8 +40,6 @@ def create_checkout_session(customer_id: str, price_id: str, success_url: str, c
         cancel_url=cancel_url,
     )
     return session.url
-
-
 
 
 def create_portal_session(customer_id: str, return_url: str) -> str:
@@ -180,6 +177,7 @@ def get_plans() -> list[PlanResponse]:
             price_id=None,
             is_popular=False,
             features=[
+                PlanFeature(name="Até 5 clientes", included=True),
                 PlanFeature(name="AI Chat", included=True, limit="50 messages/day"),
                 PlanFeature(name="Prompt Templates", included=True, limit="5 templates"),
                 PlanFeature(name="Conversation History", included=True, limit="7 days"),
@@ -194,6 +192,7 @@ def get_plans() -> list[PlanResponse]:
             price_id=settings.STRIPE_PRICE_ID_PRO or None,
             is_popular=True,
             features=[
+                PlanFeature(name="Clientes ilimitados", included=True),
                 PlanFeature(name="AI Chat", included=True, limit="1,000 messages/day"),
                 PlanFeature(name="Prompt Templates", included=True, limit="Unlimited"),
                 PlanFeature(name="Conversation History", included=True, limit="Unlimited"),
@@ -208,6 +207,7 @@ def get_plans() -> list[PlanResponse]:
             price_id=settings.STRIPE_PRICE_ID_ENTERPRISE or None,
             is_popular=False,
             features=[
+                PlanFeature(name="Clientes ilimitados", included=True),
                 PlanFeature(name="AI Chat", included=True, limit="10,000 messages/day"),
                 PlanFeature(name="Prompt Templates", included=True, limit="Unlimited"),
                 PlanFeature(name="Conversation History", included=True, limit="Unlimited"),

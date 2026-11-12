@@ -8,16 +8,19 @@ import logging
 
 import stripe
 from fastapi import APIRouter, Depends, HTTPException, Request, status
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
 from app.core.dependencies import get_current_active_user
 from app.database import get_db
+from app.models.subscription import Subscription
 from app.schemas.subscription import (
     CheckoutRequest,
     CheckoutResponse,
     PlanResponse,
     PortalResponse,
+    SubscriptionResponse,
 )
 from app.services import stripe_service
 
@@ -34,6 +37,22 @@ router = APIRouter()
 async def get_plans():
     """Return all available subscription plans with features."""
     return stripe_service.get_plans()
+
+
+@router.get(
+    "/current",
+    response_model=SubscriptionResponse | None,
+    summary="Get current subscription",
+)
+async def get_current_subscription(
+    current_user=Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Return the authenticated user's subscription (``null`` if none)."""
+    result = await db.execute(
+        select(Subscription).where(Subscription.user_id == current_user.id).order_by(Subscription.created_at.desc())
+    )
+    return result.scalars().first()
 
 
 @router.post(
