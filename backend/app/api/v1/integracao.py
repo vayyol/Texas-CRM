@@ -4,9 +4,12 @@ import os
 
 import httpx
 from fastapi import APIRouter, Body, Depends, HTTPException
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.dependencies import get_current_active_user
 from app.core.integration_security import gerar_token_integracao
+from app.core.plans import FREE_CLIENT_LIMIT, get_user_plan
+from app.database import get_db
 from app.schemas.integracao import (
     CadastroClienteSchema,
     DescricaoSchema,
@@ -69,6 +72,7 @@ async def testar_integracao(
 async def cadastrar_cliente(
     schema: CadastroClienteSchema,
     current_user=Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
 ):
     api_url = os.getenv(
         "CLIENTES_API_URL",
@@ -87,6 +91,31 @@ async def cadastrar_cliente(
 
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
+            # Plano free: limite de clientes (conta ativos e inativos).
+            plano = await get_user_plan(db, current_user.id)
+            if plano == "free":
+                listagem = await client.get(
+                    f"{api_url}/order/listar-clientes",
+                    headers={
+                        "X-API-Key": api_key,
+                        "X-User-Token": token,
+                    },
+                )
+                total_clientes = 0
+                if listagem.status_code != 404:
+                    listagem.raise_for_status()
+                    dados = listagem.json()
+                    total_clientes = len(dados) if isinstance(dados, list) else 0
+
+                if total_clientes >= FREE_CLIENT_LIMIT:
+                    raise HTTPException(
+                        status_code=403,
+                        detail=(
+                            f"O plano Free permite cadastrar até {FREE_CLIENT_LIMIT} "
+                            "clientes. Faça upgrade para cadastrar mais."
+                        ),
+                    )
+
             response = await client.post(
                 f"{api_url}/order/cadastro-cliente",
                 headers={

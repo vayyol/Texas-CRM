@@ -13,11 +13,11 @@ const navItems = [
   { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { path: '/clientes', label: 'Clientes', icon: Users },//new
   { path: '/crm', label: 'CRM', icon: FileText },//new
+  { path: '/settings/billing', label: 'Assinatura', icon: CreditCard },
   { path: '/settings/profile', label: 'Profile', icon: User },
   // { path: '/chat', label: 'AI Chat', icon: MessageSquare },
   // { path: '/templates', label: 'Templates', icon: FileText },
   // { path: '/settings/api-keys', label: 'API Keys', icon: Key },
-  // { path: '/settings/billing', label: 'Billing', icon: CreditCard },
 ];
 
 const adminItems = [

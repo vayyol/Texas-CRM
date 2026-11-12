@@ -199,6 +199,7 @@ def get_plans() -> list[PlanResponse]:
             price_id=None,
             is_popular=False,
             features=[
+                PlanFeature(name="Até 5 clientes", included=True),
                 PlanFeature(name="AI Chat", included=True, limit="50 messages/day"),
                 PlanFeature(
                     name="Prompt Templates", included=True, limit="5 templates"
@@ -215,6 +216,7 @@ def get_plans() -> list[PlanResponse]:
             price_id=settings.STRIPE_PRICE_ID_PRO or None,
             is_popular=True,
             features=[
+                PlanFeature(name="Clientes ilimitados", included=True),
                 PlanFeature(name="AI Chat", included=True, limit="1,000 messages/day"),
                 PlanFeature(name="Prompt Templates", included=True, limit="Unlimited"),
                 PlanFeature(
@@ -231,6 +233,7 @@ def get_plans() -> list[PlanResponse]:
             price_id=settings.STRIPE_PRICE_ID_ENTERPRISE or None,
             is_popular=False,
             features=[
+                PlanFeature(name="Clientes ilimitados", included=True),
                 PlanFeature(name="AI Chat", included=True, limit="10,000 messages/day"),
                 PlanFeature(name="Prompt Templates", included=True, limit="Unlimited"),
                 PlanFeature(
