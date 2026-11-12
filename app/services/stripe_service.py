@@ -36,12 +36,12 @@ def create_checkout_session(customer_id: str, price_id: str, success_url: str, c
     session = stripe.checkout.Session.create(
         customer=customer_id,
         mode="subscription",
-        payment_method_types=["card"],
         line_items=[{"price": price_id, "quantity": 1}],
         success_url=success_url,
         cancel_url=cancel_url,
     )
     return session.url
+
 
 
 
