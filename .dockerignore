@@ -15,3 +15,8 @@ tests/
 *.md
 docker-compose*
 Dockerfile
+frontend/
+backend/
+.github/
+node_modules
+*.db

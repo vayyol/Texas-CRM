@@ -123,7 +123,7 @@ docker compose run --rm migrate
 
 **Backend:**
 ```bash
-cd backend
+# (execute na raiz do projeto)
 python -m venv .venv
 source .venv/bin/activate      # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
@@ -194,7 +194,7 @@ Once the backend is running, visit:
 
 ```bash
 # Backend tests
-cd backend
+# (execute na raiz do projeto)
 pytest tests/ -v
 
 # Frontend lint & type check
