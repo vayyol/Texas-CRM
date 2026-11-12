@@ -1,27 +1,50 @@
 import { Link } from 'react-router-dom';
-import { Sparkles, MessageSquare, FileText, Key, BarChart3, CreditCard, Shield, Check, ArrowRight, Github, Twitter } from 'lucide-react';
+import { Sparkles, Users, Activity, Clock, CreditCard, MessageSquare, BarChart3, Check, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { LogoMark } from '@/components/ui/Logo';
 
 const features = [
-  { icon: MessageSquare, title: 'AI Chat Interface', desc: 'Real-time streaming conversations with any OpenAI-compatible model. Markdown rendering, code highlighting, and conversation history.' },
-  { icon: FileText, title: 'Prompt Templates', desc: 'Create, share, and organize reusable prompt templates. Boost team productivity with a curated library.' },
-  { icon: Key, title: 'API Key Management', desc: 'Generate, rotate, and revoke API keys. Secure hashed storage with prefix-based identification.' },
-  { icon: BarChart3, title: 'Usage Analytics', desc: 'Track API calls, tokens consumed, and costs. Daily breakdowns and quota enforcement per plan.' },
-  { icon: CreditCard, title: 'Stripe Billing', desc: 'Subscription management with checkout, customer portal, and webhook handling out of the box.' },
-  { icon: Shield, title: 'Enterprise Security', desc: 'JWT + refresh tokens, Google OAuth, bcrypt hashing, CORS, rate limiting, and admin controls.' },
+  { icon: Users, title: 'Clientes em um só lugar', desc: 'Cadastre seus clientes e guarde contatos, histórico e andamento de cada relacionamento, sem planilhas e anotações espalhadas.' },
+  { icon: Activity, title: 'Acompanhamento de cada etapa', desc: 'Registre contatos, interessados, orçamentos e propostas, e saiba quais vendas foram realizadas ou não se concretizaram.' },
+  { icon: Clock, title: 'Quem precisa de atenção agora', desc: 'Veja clientes há muito tempo sem contato e orçamentos que ainda não receberam resposta, antes que a oportunidade esfrie.' },
+  { icon: CreditCard, title: 'Controle de pagamentos', desc: 'Monitore parcelas, pagamentos próximos do vencimento e valores em atraso, sem depender da memória.' },
+  { icon: MessageSquare, title: 'Retorno pelo WhatsApp', desc: 'Identifique quem precisa de um retorno e facilite o contato com o cliente pelo WhatsApp.' },
+  { icon: BarChart3, title: 'Estatísticas e reativação', desc: 'Analise seus resultados comerciais e encontre clientes antigos com potencial para voltar a comprar.' },
 ];
 
 const plans = [
-  { name: 'Free', price: '$0', period: '/forever', features: ['50 API calls/day', '5 conversations', '3 templates', 'Community support'], cta: 'Get Started' },
-  { name: 'Pro', price: '$29', period: '/month', features: ['1,000 API calls/day', 'Unlimited conversations', 'Unlimited templates', 'API key management', 'Priority support', 'Advanced analytics'], cta: 'Start Free Trial', popular: true },
-  { name: 'Enterprise', price: '$99', period: '/month', features: ['10,000 API calls/day', 'Everything in Pro', 'Admin dashboard', 'Custom integrations', 'SLA guarantee', 'Dedicated support'], cta: 'Contact Sales' },
+  {
+    name: 'Free',
+    price: 'R$ 0',
+    period: '/para sempre',
+    features: [
+      'Até 5 clientes cadastrados',
+      'Edição de clientes cadastrados',
+      'Registro do relacionamento com os clientes',
+      'Análise de estatísticas',
+    ],
+    cta: 'Começar grátis',
+  },
+  {
+    name: 'Pro',
+    price: 'R$ 24,90',
+    period: '/mês',
+    features: [
+      'Cadastro ilimitado de clientes',
+      'Edição de clientes cadastrados',
+      'Registro do relacionamento com os clientes',
+      'Análise de estatísticas',
+      'Suporte prioritário',
+    ],
+    cta: 'Assinar o Pro',
+    popular: true,
+  },
 ];
 
 const steps = [
-  { num: '01', title: 'Clone & Configure', desc: 'Fork the repo, set your environment variables, and customize the branding.' },
-  { num: '02', title: 'Build & Deploy', desc: 'Use Docker Compose or deploy to your cloud provider with built-in CI/CD pipelines.' },
-  { num: '03', title: 'Launch & Scale', desc: 'Start acquiring users, manage subscriptions, and scale with confidence.' },
+  { num: '01', title: 'Cadastre seus clientes', desc: 'Reúna contatos e informações dos seus clientes em um único lugar, em vez de planilhas e conversas perdidas.' },
+  { num: '02', title: 'Registre cada contato', desc: 'Anote interessados, orçamentos, propostas, vendas e pagamentos para manter todo o histórico organizado.' },
+  { num: '03', title: 'Saiba quem chamar', desc: 'O Texas CRM mostra quem precisa de retorno agora, para você nunca perder uma venda por esquecimento.' },
 ];
 
 export default function LandingPage() {
@@ -32,18 +55,18 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16">
           <div className="flex items-center gap-3">
             <LogoMark className="w-9 h-9 rounded-[25%] shadow-lg shadow-brand-500/25" />
-            <span className="text-xl font-bold bg-gradient-to-r from-brand-400 to-accent-400 bg-clip-text text-transparent">TexasCRM</span>
+            <span className="text-xl font-bold bg-gradient-to-r from-brand-400 to-accent-400 bg-clip-text text-transparent">Texas CRM</span>
           </div>
           <div className="hidden md:flex items-center gap-8">
-            <a href="#features" className="text-sm text-surface-400 hover:text-white transition-colors">Features</a>
-            <a href="#pricing" className="text-sm text-surface-400 hover:text-white transition-colors">Pricing</a>
+            <a href="#features" className="text-sm text-surface-400 hover:text-white transition-colors">Funcionalidades</a>
+            <a href="#pricing" className="text-sm text-surface-400 hover:text-white transition-colors">Planos</a>
           </div>
           <div className="flex items-center gap-3">
             <Link to="/login">
-              <Button variant="ghost" size="sm" className="!text-surface-300 hover:!text-white">Sign In</Button>
+              <Button variant="ghost" size="sm" className="!text-surface-300 hover:!text-white">Entrar</Button>
             </Link>
             <Link to="/register">
-              <Button size="sm">Get Started</Button>
+              <Button size="sm">Começar grátis</Button>
             </Link>
           </div>
         </div>
@@ -56,27 +79,27 @@ export default function LandingPage() {
 
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-brand-500/10 border border-brand-500/20 text-brand-400 text-sm font-medium mb-8">
-            <Sparkles className="w-4 h-4" /> Open Source AI SaaS Starter Kit
+            <Sparkles className="w-4 h-4" /> CRM simples para pequenos empreendedores e autônomos
           </div>
           <h1 className="text-5xl sm:text-6xl lg:text-7xl font-extrabold leading-tight mb-6">
-            Build{' '}
+            Saiba quem precisa da sua{' '}
             <span className="bg-gradient-to-r from-brand-400 via-brand-300 to-accent-400 bg-clip-text text-transparent">
-              AI-Powered
+              atenção
             </span>{' '}
-            SaaS Products Faster
+            agora
           </h1>
           <p className="text-lg sm:text-xl text-surface-400 max-w-2xl mx-auto mb-10">
-            A production-ready starter kit with authentication, billing, AI chat, admin panel, and everything you need to launch your SaaS product in days, not months.
+            O Texas CRM centraliza o histórico e o andamento de cada cliente em um só lugar, sem a complexidade dos CRMs tradicionais. Pare de perder vendas só porque esqueceu de dar retorno.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link to="/register">
               <Button size="lg" rightIcon={<ArrowRight className="w-5 h-5" />}>
-                Start Building Free
+                Começar grátis
               </Button>
             </Link>
-            <a href="https://github.com" target="_blank" rel="noopener noreferrer">
-              <Button variant="outline" size="lg" leftIcon={<Github className="w-5 h-5" />} className="!border-white/20 !text-white">
-                View on GitHub
+            <a href="#pricing">
+              <Button variant="outline" size="lg" className="!border-white/20 !text-white">
+                Ver planos
               </Button>
             </a>
           </div>
@@ -87,8 +110,8 @@ export default function LandingPage() {
       <section id="features" className="py-24 relative">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl sm:text-4xl font-bold mb-4">Everything You Need to Ship</h2>
-            <p className="text-surface-400 max-w-2xl mx-auto">Production-ready features that would take months to build from scratch. Focus on your unique value, not boilerplate.</p>
+            <h2 className="text-3xl sm:text-4xl font-bold mb-4">Chega de planilhas, anotações e conversas perdidas</h2>
+            <p className="text-surface-400 max-w-2xl mx-auto">Tudo o que você precisa para acompanhar seus clientes de forma organizada, acessível e fácil de manter.</p>
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {features.map(f => (
@@ -108,8 +131,8 @@ export default function LandingPage() {
       <section className="py-24 bg-white/[0.02]">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl sm:text-4xl font-bold mb-4">Three Steps to Launch</h2>
-            <p className="text-surface-400">From clone to production in record time.</p>
+            <h2 className="text-3xl sm:text-4xl font-bold mb-4">Três passos para não perder vendas</h2>
+            <p className="text-surface-400">Do cadastro ao retorno certo, na hora certa.</p>
           </div>
           <div className="grid md:grid-cols-3 gap-8">
             {steps.map((s, i) => (
@@ -132,10 +155,10 @@ export default function LandingPage() {
       <section id="pricing" className="py-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl sm:text-4xl font-bold mb-4">Simple, Transparent Pricing</h2>
-            <p className="text-surface-400">Start for free. Upgrade when you need more.</p>
+            <h2 className="text-3xl sm:text-4xl font-bold mb-4">Planos simples e transparentes</h2>
+            <p className="text-surface-400">Comece grátis. Faça upgrade quando precisar de mais.</p>
           </div>
-          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+          <div className="grid md:grid-cols-2 gap-8 max-w-3xl mx-auto">
             {plans.map(plan => (
               <div
                 key={plan.name}
@@ -147,7 +170,7 @@ export default function LandingPage() {
               >
                 {plan.popular && (
                   <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-gradient-to-r from-brand-500 to-brand-600 text-xs font-semibold">
-                    Most Popular
+                    Mais popular
                   </div>
                 )}
                 <h3 className="text-xl font-bold mb-2">{plan.name}</h3>
@@ -179,13 +202,13 @@ export default function LandingPage() {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="rounded-3xl bg-gradient-to-r from-brand-600 to-brand-800 p-12 sm:p-16 text-center relative overflow-hidden">
             <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-[80px]" />
-            <h2 className="text-3xl sm:text-4xl font-bold mb-4 relative z-10">Ready to Get Started?</h2>
+            <h2 className="text-3xl sm:text-4xl font-bold mb-4 relative z-10">Pronto para organizar seus clientes?</h2>
             <p className="text-brand-100 max-w-xl mx-auto mb-8 relative z-10">
-              Join thousands of developers building AI products with TexasCRM. Get started in minutes.
+              Deixe as planilhas e anotações de lado. Comece grátis com o Texas CRM e nunca mais esqueça de acompanhar um cliente.
             </p>
             <Link to="/register" className="relative z-10 inline-block">
               <Button size="lg" variant="secondary" rightIcon={<ArrowRight className="w-5 h-5" />}>
-                Start Building for Free
+                Começar grátis
               </Button>
             </Link>
           </div>
@@ -199,40 +222,34 @@ export default function LandingPage() {
             <div className="col-span-2 md:col-span-1">
               <div className="flex items-center gap-2 mb-4">
                 <LogoMark className="w-8 h-8 rounded-[25%]" />
-                <span className="font-bold bg-gradient-to-r from-brand-400 to-accent-400 bg-clip-text text-transparent">TexasCRM</span>
+                <span className="font-bold bg-gradient-to-r from-brand-400 to-accent-400 bg-clip-text text-transparent">Texas CRM</span>
               </div>
-              <p className="text-sm text-surface-400">The fastest way to build AI-powered SaaS products.</p>
+              <p className="text-sm text-surface-400">Acompanhamento de clientes simples para quem vive de vender.</p>
             </div>
             <div>
-              <h4 className="text-sm font-semibold mb-3">Product</h4>
+              <h4 className="text-sm font-semibold mb-3">Produto</h4>
               <ul className="space-y-2 text-sm text-surface-400">
-                <li><a href="#features" className="hover:text-white transition-colors">Features</a></li>
-                <li><a href="#pricing" className="hover:text-white transition-colors">Pricing</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Documentation</a></li>
+                <li><a href="#features" className="hover:text-white transition-colors">Funcionalidades</a></li>
+                <li><a href="#pricing" className="hover:text-white transition-colors">Planos</a></li>
               </ul>
             </div>
             <div>
-              <h4 className="text-sm font-semibold mb-3">Company</h4>
+              <h4 className="text-sm font-semibold mb-3">Acesso</h4>
               <ul className="space-y-2 text-sm text-surface-400">
-                <li><a href="#" className="hover:text-white transition-colors">About</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Blog</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Careers</a></li>
+                <li><Link to="/login" className="hover:text-white transition-colors">Entrar</Link></li>
+                <li><Link to="/register" className="hover:text-white transition-colors">Criar conta</Link></li>
               </ul>
             </div>
             <div>
               <h4 className="text-sm font-semibold mb-3">Legal</h4>
               <ul className="space-y-2 text-sm text-surface-400">
-                <li><a href="#" className="hover:text-white transition-colors">Privacy</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Terms</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Privacidade</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Termos de uso</a></li>
               </ul>
             </div>
           </div>
-          <div className="mt-12 pt-8 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <p className="text-sm text-surface-500">&copy; {new Date().getFullYear()} TexasCRM. All rights reserved.</p>
-            <div className="flex gap-4">
-              <a href="#" className="text-surface-400 hover:text-white transition-colors"><Github className="w-5 h-5" /></a>
-              <a href="#" className="text-surface-400 hover:text-white transition-colors"><Twitter className="w-5 h-5" /></a>
-            </div>
+          <div className="mt-12 pt-8 border-t border-white/5">
+            <p className="text-sm text-surface-500">&copy; {new Date().getFullYear()} Texas CRM. Todos os direitos reservados.</p>
           </div>
         </div>
       </footer>

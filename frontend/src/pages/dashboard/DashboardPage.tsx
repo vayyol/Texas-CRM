@@ -98,7 +98,7 @@ export default function DashboardPage() {
     } catch (error: any) {
       setErro(
         error.response?.data?.detail ||
-        'Could not load the dashboard data.'
+        'Não foi possível carregar os dados do dashboard.'
       );
     } finally {
       setLoading(false);
@@ -111,7 +111,7 @@ export default function DashboardPage() {
 
   const fecharEstado = async (idEstado: number) => {
     const confirmar = window.confirm(
-      'Do you really want to close this stage?'
+      'Deseja realmente encerrar esta etapa?'
     );
 
     if (!confirmar) return;
@@ -124,13 +124,13 @@ export default function DashboardPage() {
         `/api/v1/integracao/fechar-estado/${idEstado}`
       );
 
-      setMensagem('Stage closed successfully!');
+      setMensagem('Etapa encerrada com sucesso!');
       await carregarDashboard();
 
     } catch (error: any) {
       setErro(
         error.response?.data?.detail ||
-        'Could not close the stage.'
+        'Não foi possível encerrar a etapa.'
       );
     } finally {
       setActionLoading(null);
@@ -141,7 +141,7 @@ export default function DashboardPage() {
     pagamento: Pagamento
   ) => {
     const confirmar = window.confirm(
-      `Do you want to record the payment for installment ${pagamento.proxima_parcela}?`
+      `Deseja registrar o pagamento da parcela ${pagamento.proxima_parcela}?`
     );
 
     if (!confirmar) return;
@@ -154,13 +154,13 @@ export default function DashboardPage() {
         `/api/v1/integracao/quitar-venda/${pagamento.client_id}/${pagamento.id_venda}/1`
       );
 
-      setMensagem('Payment recorded successfully!');
+      setMensagem('Pagamento registrado com sucesso!');
       await carregarDashboard();
 
     } catch (error: any) {
       setErro(
         error.response?.data?.detail ||
-        'Could not record the payment.'
+        'Não foi possível registrar o pagamento.'
       );
     } finally {
       setActionLoading(null);
@@ -169,7 +169,7 @@ export default function DashboardPage() {
 
   const cancelarVenda = async (pagamento: Pagamento) => {
     const confirmar = window.confirm(
-      `Do you really want to cancel the sale for ${pagamento.nome}?`
+      `Deseja realmente cancelar a venda de ${pagamento.nome}?`
     );
 
     if (!confirmar) return;
@@ -182,13 +182,13 @@ export default function DashboardPage() {
         `/api/v1/integracao/cancelar-venda/${pagamento.client_id}/${pagamento.id_venda}`
       );
 
-      setMensagem('Sale canceled successfully!');
+      setMensagem('Venda cancelada com sucesso!');
       await carregarDashboard();
 
     } catch (error: any) {
       setErro(
         error.response?.data?.detail ||
-        'Could not cancel the sale.'
+        'Não foi possível cancelar a venda.'
       );
     } finally {
       setActionLoading(null);
@@ -196,24 +196,24 @@ export default function DashboardPage() {
   };
 
   const formatarData = (data: string | null) => {
-    if (!data) return 'Not provided';
+    if (!data) return 'Não informada';
 
     const [ano, mes, dia] = data.substring(0, 10).split('-');
 
-    return `${mes}/${dia}/${ano}`;
+    return `${dia}/${mes}/${ano}`;
   };
 
   const formatarValor = (valor: number | string | null) => {
-    return Number(valor || 0).toLocaleString('en-US', {
+    return Number(valor || 0).toLocaleString('pt-BR', {
       style: 'currency',
       currency: 'BRL',
     });
   };
 
   const formatarDias = (dias: number) => {
-    if (dias === 0) return 'Today';
-    if (dias === 1) return '1 day';
-    return `${dias} days`;
+    if (dias === 0) return 'Hoje';
+    if (dias === 1) return '1 dia';
+    return `${dias} dias`;
   };
 
   const estadosAbertos = data.estados_abertos;
@@ -233,12 +233,12 @@ export default function DashboardPage() {
 
   const getTipoEstado = (tipo: string) => {
     const nomes: Record<string, string> = {
-      CONTATO: 'Contact',
-      INTERESSADO: 'Interested',
-      DESINTERESSADO: 'Not interested',
-      PROPOSTA: 'Proposal',
-      VENDA_REALIZADA: 'Sale completed',
-      VENDA_NAO_REALIZADA: 'Sale not completed',
+      CONTATO: 'Contato',
+      INTERESSADO: 'Interessado',
+      DESINTERESSADO: 'Desinteressado',
+      PROPOSTA: 'Proposta',
+      VENDA_REALIZADA: 'Venda realizada',
+      VENDA_NAO_REALIZADA: 'Venda não realizada',
     };
 
     return nomes[tipo] || tipo.replace(/_/g, ' ');
@@ -247,27 +247,27 @@ export default function DashboardPage() {
   const getSituacaoPagamento = (pagamento: Pagamento) => {
     if (pagamento.situacao === 'ATRASADO') {
       return {
-        texto: 'Payment overdue',
+        texto: 'Pagamento atrasado',
         cor: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
       };
     }
 
     if (pagamento.situacao === 'VENCE_HOJE') {
       return {
-        texto: 'Due today',
+        texto: 'Vence hoje',
         cor: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
       };
     }
 
     if (pagamento.situacao === 'A_VENCER') {
       return {
-        texto: 'Upcoming payment',
+        texto: 'A vencer',
         cor: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
       };
     }
 
     return {
-      texto: 'No due date',
+      texto: 'Sem vencimento',
       cor: 'bg-surface-100 text-surface-600 dark:bg-surface-700 dark:text-white/60',
     };
   };
@@ -279,11 +279,11 @@ export default function DashboardPage() {
       <div className="flex items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-surface-900 dark:text-white">
-            Welcome back, {user?.full_name?.split(' ')[0] || 'there'}! 👋
+            Olá, {user?.full_name?.split(' ')[0] || 'bem-vindo'}! 👋
           </h1>
 
           <p className="text-surface-500 dark:text-white/60 mt-1">
-            Keep track of the clients and payments that need your attention.
+            Acompanhe os clientes e pagamentos que precisam da sua atenção.
           </p>
         </div>
 
@@ -291,7 +291,7 @@ export default function DashboardPage() {
           onClick={carregarDashboard}
           disabled={loading}
           className="p-2 rounded-lg border border-surface-200 dark:border-surface-700 hover:bg-surface-100 dark:hover:bg-surface-800 transition"
-          title="Refresh dashboard"
+          title="Atualizar dashboard"
         >
           <RefreshCw
             className={`w-5 h-5 text-surface-600 dark:text-white/70 ${
@@ -319,27 +319,27 @@ export default function DashboardPage() {
 
         <StatCard
           icon={Users}
-          label="Total Clients"
-          value={loading ? '...' : totalClientes.toLocaleString('en-US')}
+          label="Total de clientes"
+          value={loading ? '...' : totalClientes.toLocaleString('pt-BR')}
         />
 
         <StatCard
           icon={Activity}
-          label="Open Stages"
-          value={loading ? '...' : estadosAbertos.length.toLocaleString('en-US')}
+          label="Etapas em aberto"
+          value={loading ? '...' : estadosAbertos.length.toLocaleString('pt-BR')}
           gradient
         />
 
         <StatCard
           icon={CalendarClock}
-          label="Upcoming Payments"
-          value={loading ? '...' : proximosPagamentos.length.toLocaleString('en-US')}
+          label="Pagamentos a vencer"
+          value={loading ? '...' : proximosPagamentos.length.toLocaleString('pt-BR')}
         />
 
         <StatCard
           icon={AlertCircle}
-          label="Overdue Payments"
-          value={loading ? '...' : pagamentosAtrasados.length.toLocaleString('en-US')}
+          label="Pagamentos atrasados"
+          value={loading ? '...' : pagamentosAtrasados.length.toLocaleString('pt-BR')}
         />
 
       </div>
@@ -349,11 +349,11 @@ export default function DashboardPage() {
 
         <div>
           <h2 className="text-lg font-semibold text-surface-900 dark:text-white">
-            Clients with open stages
+            Clientes com etapas em aberto
           </h2>
 
           <p className="text-sm text-surface-500 dark:text-white/60 mt-1">
-            Clients who still have sales stages in progress.
+            Clientes que ainda têm etapas de venda em andamento.
           </p>
         </div>
 
@@ -361,7 +361,7 @@ export default function DashboardPage() {
           <Card>
             <CardBody>
               <p className="text-center text-surface-500 py-6">
-                Loading follow-ups...
+                Carregando acompanhamentos...
               </p>
             </CardBody>
           </Card>
@@ -372,11 +372,11 @@ export default function DashboardPage() {
                 <CheckCircle className="w-10 h-10 mx-auto text-green-500 mb-3" />
 
                 <p className="font-medium text-surface-900 dark:text-white">
-                  No open stages
+                  Nenhuma etapa em aberto
                 </p>
 
                 <p className="text-sm text-surface-500 mt-1">
-                  No clients need follow-up right now.
+                  Nenhum cliente precisa de acompanhamento no momento.
                 </p>
               </div>
             </CardBody>
@@ -396,7 +396,7 @@ export default function DashboardPage() {
                       </h3>
 
                       <p className="text-sm text-surface-500 mt-1">
-                        {estado.telefone || 'Phone not provided'}
+                        {estado.telefone || 'Telefone não informado'}
                       </p>
                     </div>
 
@@ -414,10 +414,10 @@ export default function DashboardPage() {
 
                     <p className="text-sm text-surface-500 mt-1">
                       {estado.tipo === 'INTERESSADO'
-                        ? 'Client remains interested.'
+                        ? 'O cliente continua interessado.'
                         : estado.tipo === 'PROPOSTA'
-                        ? 'Proposal remains open.'
-                        : `The ${getTipoEstado(estado.tipo).toLowerCase()} stage remains open.`}
+                        ? 'A proposta continua em aberto.'
+                        : `A etapa "${getTipoEstado(estado.tipo).toLowerCase()}" continua em aberto.`}
                     </p>
 
                   </div>
@@ -430,10 +430,10 @@ export default function DashboardPage() {
 
                   <div className="flex items-center justify-between text-xs text-surface-500 border-t border-surface-200 dark:border-surface-700 pt-3">
                     <span>
-                      Created on {formatarData(estado.created_at)}
+                      Criado em {formatarData(estado.created_at)}
                     </span>
 
-                    <span>Open stage</span>
+                    <span>Etapa em aberto</span>
                   </div>
 
                   <div className="flex gap-2 mt-4">
@@ -446,8 +446,8 @@ export default function DashboardPage() {
                       <CheckCircle className="w-4 h-4" />
 
                       {actionLoading === `estado-${estado.id}`
-                        ? 'Closing...'
-                        : 'Close stage'}
+                        ? 'Encerrando...'
+                        : 'Encerrar etapa'}
                     </button>
 
                   </div>
@@ -461,16 +461,16 @@ export default function DashboardPage() {
 
       </div>
 
-      {/* Payment tracking */}
+      {/* Acompanhamento de pagamentos */}
       <div className="space-y-4">
 
         <div>
           <h2 className="text-lg font-semibold text-surface-900 dark:text-white">
-            Payment tracking
+            Acompanhamento de pagamentos
           </h2>
 
           <p className="text-sm text-surface-500 dark:text-white/60 mt-1">
-            Track installments close to their due date and overdue payments.
+            Acompanhe as parcelas próximas do vencimento e os pagamentos em atraso.
           </p>
         </div>
 
@@ -478,7 +478,7 @@ export default function DashboardPage() {
           <Card>
             <CardBody>
               <p className="text-center text-surface-500 py-6">
-                Loading payments...
+                Carregando pagamentos...
               </p>
             </CardBody>
           </Card>
@@ -489,11 +489,11 @@ export default function DashboardPage() {
                 <CreditCard className="w-10 h-10 mx-auto text-surface-400 mb-3" />
 
                 <p className="font-medium text-surface-900 dark:text-white">
-                  No pending payments
+                  Nenhum pagamento pendente
                 </p>
 
                 <p className="text-sm text-surface-500 mt-1">
-                  There are no sales with pending installments.
+                  Não há vendas com parcelas pendentes.
                 </p>
               </div>
             </CardBody>
@@ -516,7 +516,7 @@ export default function DashboardPage() {
                         </h3>
 
                         <p className="text-sm text-surface-500 mt-1">
-                          {pagamento.telefone || 'Phone not provided'}
+                          {pagamento.telefone || 'Telefone não informado'}
                         </p>
                       </div>
 
@@ -527,7 +527,7 @@ export default function DashboardPage() {
                     </div>
 
                     <p className="text-xs text-surface-500 mt-3">
-                      Sale #{pagamento.id_venda} · {pagamento.quantidade} {pagamento.quantidade === 1 ? 'installment' : 'installments'} · {pagamento.quant_quitada} paid
+                      Venda nº {pagamento.id_venda} · {pagamento.quantidade} {pagamento.quantidade === 1 ? 'parcela' : 'parcelas'} · {pagamento.quant_quitada} {pagamento.quant_quitada === 1 ? 'paga' : 'pagas'}
                     </p>
 
                     <div className="my-5">
@@ -538,22 +538,22 @@ export default function DashboardPage() {
                           : 'text-surface-900 dark:text-white'
                       }`}>
                         {pagamento.dias_vencimento === null
-                          ? 'No date'
+                          ? 'Sem data'
                           : pagamento.dias_vencimento < 0
                           ? formatarDias(Math.abs(pagamento.dias_vencimento))
                           : pagamento.dias_vencimento === 0
-                          ? 'Today'
+                          ? 'Hoje'
                           : formatarDias(pagamento.dias_vencimento)}
                       </p>
 
                       <p className="text-sm text-surface-500 mt-1">
                         {pagamento.situacao === 'ATRASADO'
-                          ? 'This payment is overdue.'
+                          ? 'Este pagamento está atrasado.'
                           : pagamento.situacao === 'VENCE_HOJE'
-                          ? 'The payment is due today.'
+                          ? 'O pagamento vence hoje.'
                           : pagamento.situacao === 'A_VENCER'
-                          ? 'Days remaining until the next due date.'
-                          : 'This sale has no due date.'}
+                          ? 'Prazo restante até o próximo vencimento.'
+                          : 'Esta venda não tem data de vencimento.'}
                       </p>
 
                     </div>
@@ -562,7 +562,7 @@ export default function DashboardPage() {
 
                       <div className="flex justify-between text-sm">
                         <span className="text-surface-500">
-                          Next installment
+                          Próxima parcela
                         </span>
 
                         <span className="font-medium text-surface-900 dark:text-white">
@@ -572,7 +572,7 @@ export default function DashboardPage() {
 
                       <div className="flex justify-between text-sm">
                         <span className="text-surface-500">
-                          Installment amount
+                          Valor da parcela
                         </span>
 
                         <span className="font-semibold text-surface-900 dark:text-white">
@@ -582,7 +582,7 @@ export default function DashboardPage() {
 
                       <div className="flex justify-between text-sm">
                         <span className="text-surface-500">
-                          Due date
+                          Vencimento
                         </span>
 
                         <span className="font-medium text-surface-900 dark:text-white">
@@ -602,8 +602,8 @@ export default function DashboardPage() {
                         <CheckCircle className="w-4 h-4" />
 
                         {actionLoading === `pagamento-${pagamento.id_venda}`
-                          ? 'Processing...'
-                          : 'Record payment'}
+                          ? 'Processando...'
+                          : 'Registrar pagamento'}
                       </button>
 
                       <button
@@ -614,8 +614,8 @@ export default function DashboardPage() {
                         <XCircle className="w-4 h-4" />
 
                         {actionLoading === `cancelamento-${pagamento.id_venda}`
-                          ? 'Canceling...'
-                          : 'Cancel sale'}
+                          ? 'Cancelando...'
+                          : 'Cancelar venda'}
                       </button>
 
                     </div>

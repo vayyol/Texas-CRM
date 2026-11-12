@@ -17,10 +17,10 @@ export function Header({ onMenuClick, title }: HeaderProps) {
   const navigate = useNavigate();
 
   const dropdownItems = [
-    { label: 'Profile', icon: User, onClick: () => navigate('/settings/profile') },
-    { label: 'Settings', icon: Settings, onClick: () => navigate('/settings/billing') },
-    ...(user?.is_admin ? [{ label: 'Admin Panel', icon: Shield, onClick: () => navigate('/admin'), divider: true }] : []),
-    { label: 'Sign Out', icon: LogOut, onClick: () => { logout(); navigate('/login'); }, variant: 'danger' as const, divider: true },
+    { label: 'Perfil', icon: User, onClick: () => navigate('/settings/profile') },
+    { label: 'Configurações', icon: Settings, onClick: () => navigate('/settings/billing') },
+    ...(user?.is_admin ? [{ label: 'Painel admin', icon: Shield, onClick: () => navigate('/admin'), divider: true }] : []),
+    { label: 'Sair', icon: LogOut, onClick: () => { logout(); navigate('/login'); }, variant: 'danger' as const, divider: true },
   ];
 
   return (
@@ -46,7 +46,7 @@ export function Header({ onMenuClick, title }: HeaderProps) {
         <Dropdown
           trigger={
             <button className="flex items-center gap-2 p-1 rounded-xl hover:bg-surface-50 dark:hover:bg-surface-800 transition-colors">
-              <Avatar src={user?.avatar_url} alt={user?.full_name || 'User'} size="sm" status="online" />
+              <Avatar src={user?.avatar_url} alt={user?.full_name || 'Usuário'} size="sm" status="online" />
               <span className="hidden md:block text-sm font-medium text-surface-700 dark:text-white/70 max-w-[120px] truncate">
                 {user?.full_name || user?.email}
               </span>

@@ -14,15 +14,15 @@ const navItems = [
   { path: '/clientes', label: 'Clientes', icon: Users },//new
   { path: '/crm', label: 'CRM', icon: FileText },//new
   { path: '/settings/billing', label: 'Assinatura', icon: CreditCard },
-  { path: '/settings/profile', label: 'Profile', icon: User },
+  { path: '/settings/profile', label: 'Perfil', icon: User },
   // { path: '/chat', label: 'AI Chat', icon: MessageSquare },
   // { path: '/templates', label: 'Templates', icon: FileText },
   // { path: '/settings/api-keys', label: 'API Keys', icon: Key },
 ];
 
 const adminItems = [
-  { path: '/admin', label: 'Admin Dashboard', icon: Shield },
-  { path: '/admin/users', label: 'Manage Users', icon: Users },
+  { path: '/admin', label: 'Painel admin', icon: Shield },
+  { path: '/admin/users', label: 'Gerenciar usuários', icon: Users },
 ];
 
 export function Sidebar({ collapsed, onToggle, onClose }: SidebarProps) {
