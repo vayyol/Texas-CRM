@@ -54,7 +54,7 @@ app.include_router(api_router, prefix="/api/v1")
 
 
 # ── Health Checks ──────────────────────────────────────────
-@app.get("/health", tags=["health"])
+@app.get("/health", tags=["health"], methods=["GET", "HEAD"])
 async def health_check():
     """Liveness probe — is the process running?"""
     return {"status": "healthy"}
