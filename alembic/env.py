@@ -12,7 +12,7 @@ from app.config import settings
 from app.database import Base
 
 # Import ALL models so Alembic can detect them
-from app.models import user, subscription, api_key, usage, chat, prompt_template  # noqa: F401
+from app.models import user, subscription, api_key, usage, chat, prompt_template, asaas  # noqa: F401
 
 config = context.config
 

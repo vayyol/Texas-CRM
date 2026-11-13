@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Check, Crown } from 'lucide-react';
 import { toast } from 'sonner';
 import { isAxiosError } from 'axios';
@@ -8,11 +8,6 @@ import { Card, CardBody } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 
 const LIMITE_CLIENTES_FREE = 5;
-
-// Usado quando o backend não devolve o price_id do plano.
-const PRICE_IDS_FALLBACK: Record<string, string> = {
-  pro: 'price_1UaltqRruCfBuFHNt2bQ1kBM',
-};
 
 interface Subscription {
   id: string;
@@ -26,31 +21,37 @@ interface Plan {
   name: string;
   display_name: string;
   price_monthly: number;
-  price_id: string | null;
+  purchasable: boolean;
   features: { name: string; included: boolean }[];
   is_popular: boolean;
 }
 
+// Usado só se o backend não responder. Os valores reais vêm de /subscriptions/plans.
 const PLANOS_PADRAO: Plan[] = [
   {
     name: 'free',
     display_name: 'Free',
     price_monthly: 0,
-    price_id: null,
+    purchasable: false,
     is_popular: false,
     features: [
-      { name: 'Até 5 clientes', included: true },
-      { name: 'Edição e acompanhamento dos clientes', included: true },
+      { name: 'Até 5 clientes cadastrados', included: true },
+      { name: 'Edição de clientes cadastrados', included: true },
+      { name: 'Registro do relacionamento com os clientes', included: true },
+      { name: 'Análise de estatísticas', included: true },
     ],
   },
   {
     name: 'pro',
     display_name: 'Pro',
     price_monthly: 24.9,
-    price_id: PRICE_IDS_FALLBACK.pro,
+    purchasable: true,
     is_popular: true,
     features: [
-      { name: 'Clientes ilimitados', included: true },
+      { name: 'Cadastro ilimitado de clientes', included: true },
+      { name: 'Edição de clientes cadastrados', included: true },
+      { name: 'Registro do relacionamento com os clientes', included: true },
+      { name: 'Análise de estatísticas', included: true },
       { name: 'Suporte prioritário', included: true },
     ],
   },
@@ -58,7 +59,7 @@ const PLANOS_PADRAO: Plan[] = [
     name: 'enterprise',
     display_name: 'Enterprise',
     price_monthly: 99,
-    price_id: null,
+    purchasable: false,
     is_popular: false,
     features: [
       { name: 'Clientes ilimitados', included: true },
@@ -78,18 +79,37 @@ const STATUS_LABEL: Record<string, string> = {
   incomplete: 'Incompleta',
 };
 
+const formatarPreco = (valor: number) =>
+  valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+const formatarData = (iso: string) => new Date(iso).toLocaleDateString('pt-BR');
+
+// Mensagens do backend já vêm em português e são seguras para mostrar ao usuário.
+const mensagemDeErro = (error: unknown, padrao: string) =>
+  isAxiosError(error) && typeof error.response?.data?.detail === 'string' ? error.response.data.detail : padrao;
+
 export default function BillingPage() {
   const [sub, setSub] = useState<Subscription | null>(null);
   const [plans, setPlans] = useState<Plan[]>([]);
   const [totalClientes, setTotalClientes] = useState<number | null>(null);
+  const [documento, setDocumento] = useState('');
+  const [pedirDocumento, setPedirDocumento] = useState<string | null>(null);
+  const [processando, setProcessando] = useState(false);
+  const timer = useRef<number | undefined>(undefined);
 
-  useEffect(() => {
-    const carregarAssinatura = () =>
+  const carregarAssinatura = useCallback(
+    () =>
       api
         .get<Subscription | null>('/api/v1/subscriptions/current')
-        .then((r) => setSub(r.data ?? null))
-        .catch(() => {});
+        .then((r) => {
+          setSub(r.data ?? null);
+          return r.data ?? null;
+        })
+        .catch(() => null),
+    [],
+  );
 
+  useEffect(() => {
     carregarAssinatura();
 
     api
@@ -104,51 +124,81 @@ export default function BillingPage() {
         setTotalClientes(isAxiosError(error) && error.response?.status === 404 ? 0 : null),
       );
 
-    // Ao voltar do checkout o webhook do Stripe pode levar alguns segundos.
-    let timer: number | undefined;
-    if (new URLSearchParams(window.location.search).get('success') === 'true') {
-      toast.success('Pagamento recebido! Seu plano será atualizado em instantes.');
-      timer = window.setTimeout(carregarAssinatura, 4000);
+    // Voltar da página do Asaas NÃO confirma o pagamento: quem confirma é o webhook.
+    // Por isso consultamos o backend até o plano mudar (ou desistimos depois de ~40s).
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('success') === 'true') {
+      toast.info('Estamos confirmando o seu pagamento. Seu plano será atualizado em instantes.');
+      let tentativas = 0;
+      const verificar = async () => {
+        const atual = await carregarAssinatura();
+        tentativas += 1;
+        if (atual && atual.plan_name !== 'free' && atual.status === 'active') {
+          toast.success('Pagamento confirmado! Seu plano foi atualizado.');
+          return;
+        }
+        if (tentativas < 10) timer.current = window.setTimeout(verificar, 4000);
+      };
+      timer.current = window.setTimeout(verificar, 3000);
+    } else if (params.get('canceled') === 'true') {
+      toast.info('O pagamento não foi concluído. Você pode tentar novamente quando quiser.');
+    } else if (params.get('expired') === 'true') {
+      toast.info('O link de pagamento expirou. Clique em Assinar para gerar um novo.');
     }
+    if (params.toString()) window.history.replaceState({}, '', window.location.pathname);
 
-    return () => window.clearTimeout(timer);
-  }, []);
+    return () => window.clearTimeout(timer.current);
+  }, [carregarAssinatura]);
 
+  // O acesso vale para assinatura ativa e também para cancelada que ainda está no período já pago.
   const assinaturaAtiva = sub?.status === 'active' || sub?.status === 'trialing';
-  const currentPlan = assinaturaAtiva && sub ? sub.plan_name : 'free';
-  const planoAtual = plans.find((p) => p.name === currentPlan);
-  const nomePlanoAtual = planoAtual?.display_name ?? currentPlan.charAt(0).toUpperCase() + currentPlan.slice(1);
+  const periodoPagoAtivo =
+    sub?.status === 'canceled' &&
+    sub.plan_name !== 'free' &&
+    !!sub.current_period_end &&
+    new Date(sub.current_period_end) > new Date();
+  const currentPlan = (assinaturaAtiva || periodoPagoAtivo) && sub ? sub.plan_name : 'free';
+  const planoExibido = sub && sub.plan_name !== 'free' ? sub.plan_name : currentPlan;
+  const nomePlanoAtual =
+    plans.find((p) => p.name === planoExibido)?.display_name ??
+    planoExibido.charAt(0).toUpperCase() + planoExibido.slice(1);
   const statusLabel = sub ? (STATUS_LABEL[sub.status] ?? sub.status) : 'Ativa';
-  // Quem já tem plano pago altera/cancela pelo portal, para não criar uma 2ª assinatura.
-  const gerenciarPeloPortal = currentPlan !== 'free';
+  const podeCancelar = !!sub && sub.plan_name !== 'free' && sub.status !== 'canceled';
+  const temAssinaturaPaga = currentPlan !== 'free' || podeCancelar;
 
   const handleUpgrade = async (plan: Plan) => {
-    const priceId = plan.price_id ?? PRICE_IDS_FALLBACK[plan.name];
-
-    if (!priceId) {
-      toast.error('Este plano ainda não está disponível para contratação.');
-      return;
-    }
-
+    if (processando) return;
+    setProcessando(true);
     try {
+      // O frontend informa só o plano; o valor é definido pelo backend.
       const r = await api.post('/api/v1/subscriptions/checkout', {
-        price_id: priceId,
-        success_url: `${window.location.origin}/settings/billing?success=true`,
-        cancel_url: `${window.location.origin}/settings/billing`,
+        plan: plan.name,
+        cpf_cnpj: documento.trim() || undefined,
       });
-
       window.location.href = r.data.checkout_url;
-    } catch {
-      toast.error('Não foi possível iniciar o pagamento.');
+    } catch (error) {
+      const detalhe = mensagemDeErro(error, 'Não foi possível iniciar o pagamento.');
+      // Primeira assinatura: o Asaas exige CPF/CNPJ para cadastrar o cliente.
+      if (detalhe.includes('CPF')) setPedirDocumento(plan.name);
+      toast.error(detalhe);
+      setProcessando(false);
     }
   };
 
-  const handlePortal = async () => {
+  const handleCancelar = async () => {
+    const confirmado = window.confirm(
+      'Deseja cancelar a sua assinatura? Você mantém o acesso até o fim do período já pago.',
+    );
+    if (!confirmado || processando) return;
+    setProcessando(true);
     try {
-      const r = await api.get('/api/v1/subscriptions/portal');
-      window.location.href = r.data.portal_url;
-    } catch {
-      toast.error('Não foi possível abrir o portal de assinatura.');
+      await api.post('/api/v1/subscriptions/cancel');
+      toast.success('Assinatura cancelada. Nenhuma nova cobrança será feita.');
+      await carregarAssinatura();
+    } catch (error) {
+      toast.error(mensagemDeErro(error, 'Não foi possível cancelar a assinatura.'));
+    } finally {
+      setProcessando(false);
     }
   };
 
@@ -171,16 +221,23 @@ export default function BillingPage() {
                     {statusLabel}
                   </Badge>
                 </div>
-                {sub?.current_period_end && currentPlan !== 'free' && (
+                {sub?.current_period_end && planoExibido !== 'free' && (
                   <p className="text-sm text-surface-500 mt-0.5">
-                    Renova em {new Date(sub.current_period_end).toLocaleDateString('pt-BR')}
+                    {sub.status === 'canceled'
+                      ? `Acesso até ${formatarData(sub.current_period_end)}`
+                      : `Renova em ${formatarData(sub.current_period_end)}`}
+                  </p>
+                )}
+                {sub?.status === 'past_due' && (
+                  <p className="text-sm text-amber-600 dark:text-amber-400 mt-0.5">
+                    Há um pagamento pendente. Regularize-o para voltar a usar o plano.
                   </p>
                 )}
               </div>
             </div>
-            {gerenciarPeloPortal && (
-              <Button variant="secondary" onClick={handlePortal}>
-                Gerenciar assinatura
+            {podeCancelar && (
+              <Button variant="secondary" onClick={handleCancelar} disabled={processando}>
+                Cancelar assinatura
               </Button>
             )}
           </div>
@@ -218,7 +275,7 @@ export default function BillingPage() {
               <h3 className="text-lg font-bold text-surface-900 dark:text-white">{plan.display_name}</h3>
               <div className="flex items-baseline gap-1">
                 <span className="text-3xl font-extrabold text-surface-900 dark:text-white">
-                  ${plan.price_monthly}
+                  {formatarPreco(plan.price_monthly)}
                 </span>
                 <span className="text-surface-500">/mês</span>
               </div>
@@ -230,23 +287,49 @@ export default function BillingPage() {
                   </li>
                 ))}
               </ul>
+
               {currentPlan === plan.name ? (
                 <Button variant="secondary" className="w-full" disabled>
                   Plano atual
                 </Button>
-              ) : (
-                <Button
-                  variant={plan.is_popular ? 'primary' : 'outline'}
-                  className="w-full"
-                  onClick={() => (gerenciarPeloPortal ? handlePortal() : handleUpgrade(plan))}
-                >
-                  {gerenciarPeloPortal ? 'Alterar no portal' : 'Assinar'}
+              ) : plan.purchasable && !temAssinaturaPaga ? (
+                <div className="space-y-2">
+                  {pedirDocumento === plan.name && (
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      autoComplete="off"
+                      maxLength={18}
+                      value={documento}
+                      onChange={(e) => setDocumento(e.target.value)}
+                      placeholder="CPF ou CNPJ"
+                      aria-label="CPF ou CNPJ"
+                      className="w-full rounded-lg border border-surface-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-sm text-surface-900 dark:text-white"
+                    />
+                  )}
+                  <Button
+                    variant={plan.is_popular ? 'primary' : 'outline'}
+                    className="w-full"
+                    onClick={() => handleUpgrade(plan)}
+                    disabled={processando}
+                  >
+                    {processando ? 'Aguarde...' : pedirDocumento === plan.name ? 'Continuar para o pagamento' : 'Assinar'}
+                  </Button>
+                </div>
+              ) : !plan.purchasable && plan.name !== 'free' ? (
+                <Button variant="outline" className="w-full" disabled>
+                  Em breve
                 </Button>
-              )}
+              ) : null}
             </CardBody>
           </Card>
         ))}
       </div>
+
+      <p className="text-sm text-surface-500">
+        O pagamento é feito em uma página segura do Asaas, com cobrança mensal no cartão de crédito. Você pode
+        cancelar quando quiser e mantém o acesso até o fim do período já pago.
+      </p>
     </div>
   );
 }

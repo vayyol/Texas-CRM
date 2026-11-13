@@ -1,28 +1,33 @@
 """
-Subscription routes: plans, Stripe checkout, billing portal, and webhooks.
+Subscription routes: plans, Asaas hosted checkout, cancellation, and Asaas webhooks.
+
+A integração antiga da Stripe foi substituída aqui; ``app/services/stripe_service.py`` continua no
+repositório (sem uso) enquanto a transição não termina.
 """
 
 from __future__ import annotations
 
+import hmac
 import logging
 
-import stripe
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
 from app.core.dependencies import get_current_active_user
+from app.core.plan_catalog import list_plans
 from app.database import get_db
 from app.models.subscription import Subscription
 from app.schemas.subscription import (
+    CancelResponse,
     CheckoutRequest,
     CheckoutResponse,
     PlanResponse,
-    PortalResponse,
     SubscriptionResponse,
 )
-from app.services import stripe_service
+from app.services import asaas_service
 
 logger = logging.getLogger("app.api.subscriptions")
 
@@ -36,7 +41,7 @@ router = APIRouter()
 )
 async def get_plans():
     """Return all available subscription plans with features."""
-    return stripe_service.get_plans()
+    return list_plans()
 
 
 @router.get(
@@ -58,117 +63,80 @@ async def get_current_subscription(
 @router.post(
     "/checkout",
     response_model=CheckoutResponse,
-    summary="Create checkout session",
+    summary="Create hosted checkout (Asaas)",
 )
 async def create_checkout(
     body: CheckoutRequest,
     current_user=Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Create a Stripe Checkout session for the given price."""
-    # Ensure user has a Stripe customer ID
-    if not current_user.stripe_customer_id:
-        customer_id = stripe_service.create_customer(
-            email=current_user.email,
-            name=current_user.full_name,
-        )
-        current_user.stripe_customer_id = customer_id
-        await db.flush()
+    """Cria o checkout hospedado do Asaas para o plano pedido e devolve o link.
 
+    O valor e as URLs de retorno são definidos pelo backend; o frontend envia só o plano.
+    """
     try:
-        checkout_url = stripe_service.create_checkout_session(
-            customer_id=current_user.stripe_customer_id,
-            price_id=body.price_id,
-            success_url=body.success_url,
-            cancel_url=body.cancel_url,
-        )
-    except stripe.StripeError as exc:
-        logger.error("Stripe checkout error: %s", exc)
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Stripe error: {exc.user_message or str(exc)}",
-        )
-
-    return CheckoutResponse(checkout_url=checkout_url)
+        link = await asaas_service.start_checkout(db, current_user, body.plan, body.cpf_cnpj)
+    except asaas_service.CheckoutError as exc:
+        raise HTTPException(status_code=exc.status_code, detail=exc.message)
+    return CheckoutResponse(checkout_url=link)
 
 
-@router.get(
-    "/portal",
-    response_model=PortalResponse,
-    summary="Create billing portal session",
+@router.post(
+    "/cancel",
+    response_model=CancelResponse,
+    summary="Cancel the current subscription",
 )
-async def create_portal(
-    return_url: str | None = None,
+async def cancel_subscription(
     current_user=Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Create a Stripe Billing Portal session."""
-    if not current_user.stripe_customer_id:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="No active billing account found",
-        )
-
-    url = return_url or f"{settings.FRONTEND_URL}/dashboard/billing"
-
+    """Cancela a recorrência. O acesso continua até o fim do período já pago."""
     try:
-        portal_url = stripe_service.create_portal_session(
-            customer_id=current_user.stripe_customer_id,
-            return_url=url,
-        )
-    except stripe.StripeError as exc:
-        logger.error("Stripe portal error: %s", exc)
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Stripe error: {exc.user_message or str(exc)}",
-        )
-
-    return PortalResponse(portal_url=portal_url)
+        row = await asaas_service.cancel_subscription(db, current_user)
+    except asaas_service.CheckoutError as exc:
+        raise HTTPException(status_code=exc.status_code, detail=exc.message)
+    access_until = row.current_period_end if row.plan_name != "free" else None
+    return CancelResponse(status=row.status, access_until=access_until)
 
 
-@router.post("/webhook", summary="Stripe webhook endpoint")
-async def stripe_webhook(
+@router.post("/webhook/asaas", summary="Asaas webhook endpoint")
+async def asaas_webhook(
     request: Request,
     db: AsyncSession = Depends(get_db),
 ):
-    """Receive and process Stripe webhook events.
+    """Recebe os eventos do Asaas (checkout, assinatura e cobrança).
 
-    Verifies the event signature and dispatches to the appropriate handler.
+    Autentica pelo header ``asaas-access-token`` (token próprio do webhook, nunca a chave da API),
+    processa cada evento uma única vez e só confirma (HTTP 200) depois de gravar o resultado.
     """
-    payload = await request.body()
-    sig_header = request.headers.get("stripe-signature")
+    expected = settings.ASAAS_WEBHOOK_TOKEN.get_secret_value()
+    if not expected:
+        # Falha fechada: sem token configurado não aceitamos evento nenhum.
+        logger.error("ASAAS_WEBHOOK_TOKEN não configurado: webhook recusado.")
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Webhook não configurado")
 
-    if not sig_header:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Missing Stripe signature header",
-        )
+    received = request.headers.get("asaas-access-token", "")
+    if not hmac.compare_digest(received.encode("utf-8"), expected.encode("utf-8")):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token inválido")
 
     try:
-        event = stripe.Webhook.construct_event(payload, sig_header, settings.STRIPE_WEBHOOK_SECRET)
-    except stripe.SignatureVerificationError:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid Stripe signature",
-        )
+        payload = await request.json()
     except ValueError:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid payload",
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Payload inválido")
+    if not isinstance(payload, dict):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Payload inválido")
 
-    event_type = event["type"]
-    event_data = event["data"]["object"]
+    try:
+        result = await asaas_service.handle_webhook(db, payload)
+        await db.commit()
+    except IntegrityError:
+        # Mesma entrega chegando em paralelo: o outro processamento já cuidou do evento.
+        await db.rollback()
+        return {"status": "duplicate"}
+    except Exception:
+        # Desfaz tudo (inclusive o registro do evento) e responde erro para o Asaas reenviar.
+        await db.rollback()
+        logger.exception("Falha ao processar o evento %s do Asaas", payload.get("id"))
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Erro ao processar o evento")
 
-    if event_type == "checkout.session.completed":
-        await stripe_service.handle_checkout_completed(db, event_data)
-    elif event_type == "customer.subscription.updated":
-        await stripe_service.handle_subscription_updated(db, event_data)
-    elif event_type == "customer.subscription.deleted":
-        await stripe_service.handle_subscription_deleted(db, event_data)
-    elif event_type == "invoice.payment_failed":
-        logger.warning("Payment failed for customer %s", event_data.get("customer"))
-    else:
-        logger.info("Unhandled Stripe event type: %s", event_type)
-
-    return {"status": "ok"}
+    return {"status": result}

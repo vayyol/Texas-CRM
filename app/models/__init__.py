@@ -4,6 +4,7 @@ callers can do ``from app.models import *``.
 """
 
 from app.models.api_key import APIKey
+from app.models.asaas import AsaasCheckout, AsaasWebhookEvent
 from app.models.chat import Conversation, Message
 from app.models.prompt_template import PromptTemplate
 from app.models.subscription import Subscription
@@ -14,6 +15,8 @@ __all__ = [
     "User",
     "Subscription",
     "APIKey",
+    "AsaasCheckout",
+    "AsaasWebhookEvent",
     "UsageRecord",
     "Conversation",
     "Message",

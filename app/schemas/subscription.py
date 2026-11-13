@@ -15,7 +15,8 @@ class PlanResponse(BaseModel):
     name: str
     display_name: str
     price_monthly: float
-    price_id: Optional[str] = None
+    price_id: Optional[str] = None  # legado (Stripe); sempre nulo com o Asaas
+    purchasable: bool = False
     features: List[PlanFeature] = []
     is_popular: bool = False
 
@@ -31,14 +32,23 @@ class SubscriptionResponse(BaseModel):
 
 
 class CheckoutRequest(BaseModel):
-    price_id: str
-    success_url: str
-    cancel_url: str
+    """O frontend informa só o plano. Valor e URLs de retorno são definidos pelo backend."""
+
+    plan: str
+    # CPF ou CNPJ: exigido pelo Asaas para criar o cliente. Não é gravado no nosso banco.
+    cpf_cnpj: Optional[str] = None
 
 
 class CheckoutResponse(BaseModel):
     checkout_url: str
 
 
+class CancelResponse(BaseModel):
+    status: str
+    access_until: Optional[datetime] = None
+
+
 class PortalResponse(BaseModel):
+    """Legado (portal da Stripe). Não é mais usado."""
+
     portal_url: str

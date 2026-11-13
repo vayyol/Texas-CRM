@@ -46,6 +46,15 @@ class Settings(BaseSettings):
     STRIPE_PRICE_ID_PRO: str = ""
     STRIPE_PRICE_ID_ENTERPRISE: str = ""
 
+    # ── Asaas (provedor de pagamentos atual) ─────────────────
+    # A chave da API fica SOMENTE no backend. Sandbox e produção usam chaves diferentes.
+    ASAAS_API_KEY: SecretStr = SecretStr("")
+    ASAAS_ENVIRONMENT: str = "sandbox"  # sandbox | production
+    # Token que o Asaas envia no header `asaas-access-token` dos webhooks (mín. 32 caracteres).
+    # Nunca reutilize a chave da API aqui.
+    ASAAS_WEBHOOK_TOKEN: SecretStr = SecretStr("")
+    ASAAS_CHECKOUT_MINUTES_TO_EXPIRE: int = 60  # o Asaas aceita de 10 a 1440
+
     # ── OpenAI-compatible API ────────────────────────────────
     OPENAI_API_KEY: str = ""
     OPENAI_API_BASE: str = "https://api.openai.com/v1"
@@ -64,6 +73,13 @@ class Settings(BaseSettings):
         "pro": 1000,
         "enterprise": 10000,
     }
+
+    @property
+    def ASAAS_BASE_URL(self) -> str:
+        """URL base da API do Asaas conforme o ambiente (sandbox por padrão, por segurança)."""
+        if self.ASAAS_ENVIRONMENT.strip().lower() == "production":
+            return "https://api.asaas.com/v3"
+        return "https://api-sandbox.asaas.com/v3"
 
     @field_validator("CORS_ORIGINS", mode="before")
     @classmethod
