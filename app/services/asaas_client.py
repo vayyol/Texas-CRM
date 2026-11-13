@@ -92,12 +92,49 @@ async def find_customer_by_external_reference(external_reference: str) -> str | 
     return data[0].get("id") if data else None
 
 
-async def create_customer(*, name: str, email: str, cpf_cnpj: str, external_reference: str) -> str:
-    """Cria o cliente no Asaas e devolve o id (``cus_...``)."""
-    payload = {"name": name, "email": email, "cpfCnpj": cpf_cnpj, "externalReference": external_reference}
+def _customer_payload(
+    *, name: str, email: str, cpf_cnpj: str, phone: str, address: str,
+    address_number: str, postal_code: str, province: str,
+    external_reference: str | None = None,
+) -> dict:
+    """Monta os campos cadastrais aceitos pelo endpoint de clientes do Asaas."""
+    payload = {
+        "name": name, "email": email, "cpfCnpj": cpf_cnpj, "phone": phone,
+        "address": address, "addressNumber": address_number, "postalCode": postal_code,
+        "province": province,
+    }
+    if external_reference:
+        payload["externalReference"] = external_reference
+    return payload
+
+
+async def create_customer(
+    *, name: str, email: str, cpf_cnpj: str, phone: str, address: str,
+    address_number: str, postal_code: str, province: str,
+    external_reference: str,
+) -> str:
+    """Cria o cliente no Asaas e devolve o id."""
+    payload = _customer_payload(
+        name=name, email=email, cpf_cnpj=cpf_cnpj, phone=phone, address=address,
+        address_number=address_number, postal_code=postal_code, province=province,
+        external_reference=external_reference,
+    )
     response = await _request("POST", "/customers", json=payload)
     _raise_for_status(response, "criar cliente")
     return response.json()["id"]
+
+
+async def update_customer(
+    customer_id: str, *, name: str, email: str, cpf_cnpj: str, phone: str,
+    address: str, address_number: str, postal_code: str, province: str,
+) -> None:
+    """Atualiza os dados cadastrais de um cliente já existente no Asaas."""
+    payload = _customer_payload(
+        name=name, email=email, cpf_cnpj=cpf_cnpj, phone=phone, address=address,
+        address_number=address_number, postal_code=postal_code, province=province,
+    )
+    response = await _request("PUT", f"/customers/{customer_id}", json=payload)
+    _raise_for_status(response, "atualizar cliente")
 
 
 async def create_checkout(

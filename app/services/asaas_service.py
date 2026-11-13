@@ -2,7 +2,7 @@
 Regra de negócio das assinaturas via Asaas: iniciar checkout, cancelar e processar webhooks.
 
 Princípios:
-* O backend define plano, valor e URLs de retorno. O frontend só informa o identificador do plano.
+* O backend define plano, valor e URLs de retorno. O frontend envia o plano e os dados cadastrais do pagador.
 * Pagamento só é considerado confirmado por evento de webhook do Asaas, nunca pela página de sucesso.
 * Todo evento é processado uma única vez (idempotência pelo ``id`` do evento).
 * Eventos atrasados de pagamento nunca reativam uma assinatura já cancelada.
@@ -98,7 +98,11 @@ def _return_urls() -> tuple[str, str, str]:
 # ── Iniciar checkout ─────────────────────────────────────────
 
 
-async def start_checkout(db: AsyncSession, user: User, plan_name: str, cpf_cnpj: str | None) -> str:
+async def start_checkout(
+    db: AsyncSession, user: User, plan_name: str, *, cpf_cnpj: str | None,
+    phone: str | None, address: str | None, address_number: str | None,
+    postal_code: str | None, province: str | None, city: str | None,
+) -> str:
     """Cria (ou reaproveita) um checkout hospedado do Asaas e devolve o link."""
     plan = get_plan(plan_name)
     if plan is None or not plan.purchasable:
@@ -119,7 +123,10 @@ async def start_checkout(db: AsyncSession, user: User, plan_name: str, cpf_cnpj:
     if existing and existing.expires_at and _aware(existing.expires_at) > _now() + timedelta(minutes=2):
         return existing.link
 
-    customer_id = await _ensure_customer(db, user, cpf_cnpj)
+    customer_id = await _ensure_customer(
+        db, user, cpf_cnpj=cpf_cnpj, phone=phone, address=address,
+        address_number=address_number, postal_code=postal_code, province=province, city=city,
+    )
 
     success_url, cancel_url, expired_url = _return_urls()
     minutes = max(10, min(1440, settings.ASAAS_CHECKOUT_MINUTES_TO_EXPIRE))
@@ -154,28 +161,51 @@ async def start_checkout(db: AsyncSession, user: User, plan_name: str, cpf_cnpj:
     return link
 
 
-async def _ensure_customer(db: AsyncSession, user: User, cpf_cnpj: str | None) -> str:
-    """Devolve o id do cliente no Asaas, criando-o só se ainda não existir."""
-    if user.asaas_customer_id:
-        return user.asaas_customer_id
+async def _ensure_customer(
+    db: AsyncSession, user: User, *, cpf_cnpj: str | None, phone: str | None,
+    address: str | None, address_number: str | None, postal_code: str | None,
+    province: str | None, city: str | None,
+) -> str:
+    """Cria ou atualiza o cadastro do cliente no Asaas antes de abrir o checkout."""
+    required = {
+        "CPF/CNPJ": cpf_cnpj, "telefone": phone, "endereço": address,
+        "número do endereço": address_number, "CEP": postal_code,
+        "bairro": province, "cidade": city,
+    }
+    if not cpf_cnpj or not is_valid_cpf_cnpj(cpf_cnpj):
+        raise CheckoutError(400, "Informe um CPF ou CNPJ válido para continuar.")
+    missing = [label for label, value in required.items() if not value or not value.strip()]
+    if missing:
+        raise CheckoutError(400, "Preencha os dados obrigatórios para pagamento: " + ", ".join(missing) + ".")
 
+    clean_phone = "".join(ch for ch in phone if ch.isdigit())
+    clean_postal_code = "".join(ch for ch in postal_code if ch.isdigit())
+    if len(clean_phone) not in (10, 11):
+        raise CheckoutError(400, "Informe um telefone com DDD válido.")
+    if len(clean_postal_code) != 8:
+        raise CheckoutError(400, "Informe um CEP válido com 8 dígitos.")
+    if not city.strip().isdigit() or len(city.strip()) != 7:
+        raise CheckoutError(400, "Não foi possível identificar o código IBGE da cidade pelo CEP. Confira o CEP informado.")
+
+    customer_data = {
+        "name": user.full_name or user.email.split("@")[0], "email": user.email,
+        "cpf_cnpj": normalize_document(cpf_cnpj), "phone": clean_phone,
+        "address": address.strip(), "address_number": address_number.strip(),
+        "postal_code": clean_postal_code, "province": province.strip(),
+    }
     try:
-        customer_id = await asaas_client.find_customer_by_external_reference(str(user.id))
+        customer_id = user.asaas_customer_id
         if not customer_id:
-            if not cpf_cnpj or not is_valid_cpf_cnpj(cpf_cnpj):
-                raise CheckoutError(400, "Informe um CPF ou CNPJ válido para continuar.")
-            customer_id = await asaas_client.create_customer(
-                name=user.full_name or user.email.split("@")[0],
-                email=user.email,
-                cpf_cnpj=normalize_document(cpf_cnpj),
-                external_reference=str(user.id),
-            )
+            customer_id = await asaas_client.find_customer_by_external_reference(str(user.id))
+        if customer_id:
+            await asaas_client.update_customer(customer_id, **customer_data)
+        else:
+            customer_id = await asaas_client.create_customer(**customer_data, external_reference=str(user.id))
     except asaas_client.AsaasError as exc:
         raise CheckoutError(502 if exc.status_code is None or exc.status_code >= 500 else 400, exc.message) from exc
 
-    user.asaas_customer_id = customer_id
-    # Persiste já: se a criação do checkout falhar logo depois, o vínculo com o cliente não se perde
-    # (o get_db faz rollback em caso de erro) e não criamos clientes duplicados no Asaas.
+    if user.asaas_customer_id != customer_id:
+        user.asaas_customer_id = customer_id
     await db.commit()
     return customer_id
 

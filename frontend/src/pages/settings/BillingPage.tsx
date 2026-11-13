@@ -93,6 +93,13 @@ export default function BillingPage() {
   const [plans, setPlans] = useState<Plan[]>([]);
   const [totalClientes, setTotalClientes] = useState<number | null>(null);
   const [documento, setDocumento] = useState('');
+  const [telefone, setTelefone] = useState('');
+  const [endereco, setEndereco] = useState('');
+  const [numeroEndereco, setNumeroEndereco] = useState('');
+  const [cep, setCep] = useState('');
+  const [bairro, setBairro] = useState('');
+  const [cidade, setCidade] = useState('');
+  const [nomeCidade, setNomeCidade] = useState('');
   const [pedirDocumento, setPedirDocumento] = useState<string | null>(null);
   const [processando, setProcessando] = useState(false);
   const timer = useRef<number | undefined>(undefined);
@@ -168,19 +175,26 @@ export default function BillingPage() {
 
   const handleUpgrade = async (plan: Plan) => {
     if (processando) return;
+    if (pedirDocumento !== plan.name) {
+      setPedirDocumento(plan.name);
+      toast.info('Preencha seus dados cadastrais para continuar ao pagamento.');
+      return;
+    }
     setProcessando(true);
     try {
-      // O frontend informa só o plano; o valor é definido pelo backend.
       const r = await api.post('/api/v1/subscriptions/checkout', {
         plan: plan.name,
-        cpf_cnpj: documento.trim() || undefined,
+        cpf_cnpj: documento.trim(),
+        phone: telefone.trim(),
+        address: endereco.trim(),
+        address_number: numeroEndereco.trim(),
+        postal_code: cep.trim(),
+        province: bairro.trim(),
+        city: cidade.trim(),
       });
       window.location.href = r.data.checkout_url;
     } catch (error) {
-      const detalhe = mensagemDeErro(error, 'Não foi possível iniciar o pagamento.');
-      // Primeira assinatura: o Asaas exige CPF/CNPJ para cadastrar o cliente.
-      if (detalhe.includes('CPF')) setPedirDocumento(plan.name);
-      toast.error(detalhe);
+      toast.error(mensagemDeErro(error, 'Não foi possível iniciar o pagamento.'));
       setProcessando(false);
     }
   };
@@ -295,17 +309,15 @@ export default function BillingPage() {
               ) : plan.purchasable && !temAssinaturaPaga ? (
                 <div className="space-y-2">
                   {pedirDocumento === plan.name && (
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      autoComplete="off"
-                      maxLength={18}
-                      value={documento}
-                      onChange={(e) => setDocumento(e.target.value)}
-                      placeholder="CPF ou CNPJ"
-                      aria-label="CPF ou CNPJ"
-                      className="w-full rounded-lg border border-surface-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-sm text-surface-900 dark:text-white"
-                    />
+                    <div className="space-y-2">
+                      <input type="text" autoComplete="off" maxLength={18} value={documento} onChange={(e) => setDocumento(e.target.value)} placeholder="CPF ou CNPJ" aria-label="CPF ou CNPJ" className="w-full rounded-lg border border-surface-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-sm text-surface-900 dark:text-white" />
+                      <input type="tel" autoComplete="tel" value={telefone} onChange={(e) => setTelefone(e.target.value)} placeholder="Telefone com DDD" aria-label="Telefone com DDD" className="w-full rounded-lg border border-surface-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-sm text-surface-900 dark:text-white" />
+                      <input type="text" autoComplete="street-address" value={endereco} onChange={(e) => setEndereco(e.target.value)} placeholder="Endereço (rua/avenida)" aria-label="Endereço" className="w-full rounded-lg border border-surface-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-sm text-surface-900 dark:text-white" />
+                      <input type="text" value={numeroEndereco} onChange={(e) => setNumeroEndereco(e.target.value)} placeholder="Número" aria-label="Número do endereço" className="w-full rounded-lg border border-surface-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-sm text-surface-900 dark:text-white" />
+                      <input type="text" autoComplete="postal-code" maxLength={9} value={cep} onChange={(e) => setCep(e.target.value)} onBlur={async () => { const cepLimpo = cep.replace(/\D/g, ''); if (cepLimpo.length !== 8) return; try { const resposta = await fetch(`https://viacep.com.br/ws/${cepLimpo}/json/`); const dados = await resposta.json(); if (dados.erro) { toast.error('CEP não encontrado. Confira o número informado.'); return; } setEndereco(dados.logradouro || endereco); setBairro(dados.bairro || bairro); setCidade(String(dados.ibge || '')); setNomeCidade([dados.localidade, dados.uf].filter(Boolean).join(' - ')); } catch { toast.error('Não foi possível consultar o CEP agora.'); } }} placeholder="CEP (preenche endereço e cidade)" aria-label="CEP" className="w-full rounded-lg border border-surface-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-sm text-surface-900 dark:text-white" />
+                      <input type="text" autoComplete="address-level3" value={bairro} onChange={(e) => setBairro(e.target.value)} placeholder="Bairro" aria-label="Bairro" className="w-full rounded-lg border border-surface-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-sm text-surface-900 dark:text-white" />
+                      <input type="text" value={nomeCidade} readOnly placeholder="Cidade (identificada pelo CEP)" aria-label="Cidade" className="w-full rounded-lg border border-surface-200 dark:border-white/10 bg-surface-50 dark:bg-white/5 px-3 py-2 text-sm text-surface-900 dark:text-white" />
+                    </div>
                   )}
                   <Button
                     variant={plan.is_popular ? 'primary' : 'outline'}

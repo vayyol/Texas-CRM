@@ -32,11 +32,17 @@ class SubscriptionResponse(BaseModel):
 
 
 class CheckoutRequest(BaseModel):
-    """O frontend informa só o plano. Valor e URLs de retorno são definidos pelo backend."""
+    """Dados cadastrais exigidos pelo Asaas para criar/atualizar o cliente."""
 
     plan: str
-    # CPF ou CNPJ: exigido pelo Asaas para criar o cliente. Não é gravado no nosso banco.
+    # Dados usados somente no cadastro do cliente no Asaas; não são persistidos no TexasCRM.
     cpf_cnpj: Optional[str] = None
+    phone: Optional[str] = None
+    address: Optional[str] = None
+    address_number: Optional[str] = None
+    postal_code: Optional[str] = None
+    province: Optional[str] = None
+    city: Optional[str] = None
 
 
 class CheckoutResponse(BaseModel):

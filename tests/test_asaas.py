@@ -49,6 +49,8 @@ class FakeAsaas:
             return httpx.Response(200, json={"data": self.existing_customers})
         if request.method == "POST" and path.endswith("/customers"):
             return httpx.Response(200, json={"id": "cus_123"})
+        if request.method == "PUT" and "/customers/" in path:
+            return httpx.Response(200, json={"id": path.rsplit("/", 1)[-1]})
         if request.method == "POST" and path.endswith("/checkouts"):
             return httpx.Response(
                 200, json={"id": "chk_123", "link": "https://sandbox.asaas.com/checkoutSession/show/chk_123"}
@@ -154,7 +156,12 @@ async def test_checkout_creates_customer_and_hosted_checkout(client: AsyncClient
     headers = await _register(client, email)
 
     # O cliente tenta mandar valor e URLs próprios: o backend deve ignorar.
-    body = {"plan": "pro", "cpf_cnpj": VALID_CPF, "price": 1, "value": 1, "success_url": "https://evil.example"}
+    body = {
+        "plan": "pro", "cpf_cnpj": VALID_CPF, "phone": "27999998888",
+        "address": "Rua das Flores", "address_number": "123", "postal_code": "29900000",
+        "province": "Centro", "city": "3204906",
+        "price": 1, "value": 1, "success_url": "https://evil.example",
+    }
     response = await client.post("/api/v1/subscriptions/checkout", json=body, headers=headers)
 
     assert response.status_code == 200
@@ -164,6 +171,11 @@ async def test_checkout_creates_customer_and_hosted_checkout(client: AsyncClient
     customer_body = json.loads(customer_req.content)
     assert customer_body["cpfCnpj"] == "52998224725"  # só dígitos
     assert customer_body["email"] == email
+    assert customer_body["phone"] == "27999998888"
+    assert customer_body["address"] == "Rua das Flores"
+    assert customer_body["addressNumber"] == "123"
+    assert customer_body["postalCode"] == "29900000"
+    assert customer_body["province"] == "Centro"
 
     checkout_req = fake_asaas.calls("POST", "/checkouts")[0]
     sent = json.loads(checkout_req.content)
@@ -205,19 +217,30 @@ async def test_checkout_reuses_existing_asaas_customer(client: AsyncClient, db_s
     fake_asaas.existing_customers = [{"id": "cus_old"}]
     headers = await _register(client, "returning@example.com")
 
-    response = await client.post("/api/v1/subscriptions/checkout", json={"plan": "pro"}, headers=headers)
+    body = {
+        "plan": "pro", "cpf_cnpj": VALID_CPF, "phone": "27999998888",
+        "address": "Rua das Flores", "address_number": "123", "postal_code": "29900000",
+        "province": "Centro", "city": "3204906",
+    }
+    response = await client.post("/api/v1/subscriptions/checkout", json=body, headers=headers)
 
-    assert response.status_code == 200  # sem CPF: o cliente já existia no Asaas
+    assert response.status_code == 200
     assert fake_asaas.calls("POST", "/customers") == []
+    assert len(fake_asaas.calls("PUT", "/customers/cus_old")) == 1
+    updated = json.loads(fake_asaas.calls("PUT", "/customers/cus_old")[0].content)
+    assert updated["phone"] == "27999998888"
     assert json.loads(fake_asaas.calls("POST", "/checkouts")[0].content)["customer"] == "cus_old"
 
 
 async def test_checkout_without_api_key_is_unavailable(client: AsyncClient, monkeypatch, fake_asaas):
     monkeypatch.setattr(settings, "ASAAS_API_KEY", SecretStr(""))
     headers = await _register(client, "nokey@example.com")
-    response = await client.post(
-        "/api/v1/subscriptions/checkout", json={"plan": "pro", "cpf_cnpj": VALID_CPF}, headers=headers
-    )
+    body = {
+        "plan": "pro", "cpf_cnpj": VALID_CPF, "phone": "27999998888",
+        "address": "Rua das Flores", "address_number": "123", "postal_code": "29900000",
+        "province": "Centro", "city": "3204906",
+    }
+    response = await client.post("/api/v1/subscriptions/checkout", json=body, headers=headers)
     assert response.status_code == 502
     assert "indisponíveis" in response.json()["detail"]
     assert fake_asaas.requests == []

@@ -72,10 +72,21 @@ async def create_checkout(
 ):
     """Cria o checkout hospedado do Asaas para o plano pedido e devolve o link.
 
-    O valor e as URLs de retorno são definidos pelo backend; o frontend envia só o plano.
+    O valor e as URLs são definidos pelo backend; o frontend também envia os dados cadastrais do pagador.
     """
     try:
-        link = await asaas_service.start_checkout(db, current_user, body.plan, body.cpf_cnpj)
+        link = await asaas_service.start_checkout(
+            db,
+            current_user,
+            body.plan,
+            cpf_cnpj=body.cpf_cnpj,
+            phone=body.phone,
+            address=body.address,
+            address_number=body.address_number,
+            postal_code=body.postal_code,
+            province=body.province,
+            city=body.city,
+        )
     except asaas_service.CheckoutError as exc:
         raise HTTPException(status_code=exc.status_code, detail=exc.message)
     return CheckoutResponse(checkout_url=link)
