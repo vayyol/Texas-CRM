@@ -1,3 +1,4 @@
+
 import { useId } from 'react';
 
 interface LogoMarkProps {
@@ -5,11 +6,13 @@ interface LogoMarkProps {
 }
 
 /**
- * Texas CRM logo mark: a minimal city skyline on the brand gradient.
- * Pass sizing/shadow classes through `className` (default: 36px).
+ * TexasCRM logo mark.
+ * Geometric white and blue symbol on a black rounded square.
  */
-export function LogoMark({ className = 'w-9 h-9 rounded-[25%]' }: LogoMarkProps) {
-  const gradientId = `logo-gradient-${useId().replace(/:/g, '')}`;
+export function LogoMark({
+  className = 'w-9 h-9 rounded-[25%]',
+}: LogoMarkProps) {
+  const clipId = `logo-clip-${useId().replace(/:/g, '')}`;
 
   return (
     <svg
@@ -21,17 +24,36 @@ export function LogoMark({ className = 'w-9 h-9 rounded-[25%]' }: LogoMarkProps)
       aria-label="TexasCRM"
     >
       <defs>
-        <linearGradient id={gradientId} x1="0" y1="0" x2="48" y2="48" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#6366f1" />
-          <stop offset="1" stopColor="#4338ca" />
-        </linearGradient>
+        <clipPath id={clipId}>
+          <rect width="48" height="48" rx="7" />
+        </clipPath>
       </defs>
-      <rect width="48" height="48" rx="12" fill={`url(#${gradientId})`} />
-      <rect x="7.5" y="25" width="6" height="12" rx="1.5" fill="#ffffff" />
-      <rect x="16.5" y="17" width="6" height="20" rx="1.5" fill="#ffffff" />
-      <rect x="25.5" y="10" width="6" height="27" rx="1.5" fill="#6ee7b7" />
-      <rect x="34.5" y="21" width="6" height="16" rx="1.5" fill="#ffffff" />
-      <rect x="7.5" y="39.5" width="33" height="1.5" rx="0.75" fill="#ffffff" fillOpacity="0.55" />
+
+      <g clipPath={`url(#${clipId})`}>
+        {/* Fundo preto */}
+        <rect width="48" height="48" fill="#000000" />
+
+        {/* Barra superior branca */}
+        <path
+          d="M10 9.2H33.5C37.4 9.2 40 11.9 40 15.2V15.8H10V9.2Z"
+          fill="#FFFFFF"
+        />
+
+        {/* Bloco vertical branco central */}
+        <rect
+          x="21.5"
+          y="17"
+          width="7"
+          height="9.5"
+          fill="#FFFFFF"
+        />
+
+        {/* Estrutura inferior azul */}
+        <path
+          d="M10 17H17V29H33.5C37.4 29 40 31.7 40 35V36.2H10V17Z"
+          fill="#3068F5"
+        />
+      </g>
     </svg>
   );
 }
