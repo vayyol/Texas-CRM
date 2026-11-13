@@ -1142,3 +1142,61 @@ async def editar_email_cliente(
             status_code=502,
             detail="Não foi possível conectar à API de clientes.",
         )
+
+
+# FOLLOW-UPS DO DASHBOARD ---------------------------------
+
+@router.get("/followups")
+async def listar_followups(
+    current_user=Depends(get_current_active_user),
+):
+    api_url = os.getenv("CLIENTES_API_URL", "http://host.docker.internal:8001").rstrip("/")
+    api_key = os.getenv("CLIENTES_API_KEY")
+    if not api_key:
+        raise HTTPException(status_code=500, detail="Chave de integração não configurada.")
+    token = gerar_token_integracao(current_user.id)
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.get(
+                f"{api_url}/order/followups",
+                headers={"X-API-Key": api_key, "X-User-Token": token},
+            )
+        response.raise_for_status()
+        return response.json()
+    except httpx.HTTPStatusError as exc:
+        try:
+            detalhe = exc.response.json()
+        except ValueError:
+            detalhe = "Erro retornado pela API de clientes."
+        raise HTTPException(status_code=exc.response.status_code, detail=detalhe)
+    except httpx.RequestError:
+        raise HTTPException(status_code=502, detail="Não foi possível conectar à API de clientes.")
+
+
+@router.post("/dispensar-followup")
+async def dispensar_followup(
+    followup_key: str = Body(..., embed=True),
+    current_user=Depends(get_current_active_user),
+):
+    api_url = os.getenv("CLIENTES_API_URL", "http://host.docker.internal:8001").rstrip("/")
+    api_key = os.getenv("CLIENTES_API_KEY")
+    if not api_key:
+        raise HTTPException(status_code=500, detail="Chave de integração não configurada.")
+    token = gerar_token_integracao(current_user.id)
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.post(
+                f"{api_url}/order/dispensar-followup",
+                headers={"X-API-Key": api_key, "X-User-Token": token},
+                json={"followup_key": followup_key},
+            )
+        response.raise_for_status()
+        return response.json()
+    except httpx.HTTPStatusError as exc:
+        try:
+            detalhe = exc.response.json()
+        except ValueError:
+            detalhe = "Erro retornado pela API de clientes."
+        raise HTTPException(status_code=exc.response.status_code, detail=detalhe)
+    except httpx.RequestError:
+        raise HTTPException(status_code=502, detail="Não foi possível conectar à API de clientes.")

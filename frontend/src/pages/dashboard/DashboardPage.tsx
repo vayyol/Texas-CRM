@@ -51,6 +51,19 @@ interface DashboardAcompanhamento {
   pagamentos: Pagamento[];
 }
 
+interface Followup {
+  key: string;
+  regra: string;
+  client_id: number;
+  nome: string;
+  telefone: string | null;
+  email: string | null;
+  titulo: string;
+  descricao: string;
+  dias: number;
+  created_at: string;
+}
+
 interface Cliente {
   id: number;
 }
@@ -63,6 +76,7 @@ export default function DashboardPage() {
     pagamentos: [],
   });
 
+  const [followups, setFollowups] = useState<Followup[]>([]);
   const [totalClientes, setTotalClientes] = useState(0);
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState('');
@@ -74,10 +88,11 @@ export default function DashboardPage() {
     setErro('');
 
     try {
-      const [dashboardResponse, clientesResponse] = await Promise.all([
+      const [dashboardResponse, followupsResponse, clientesResponse] = await Promise.all([
         api.get<DashboardAcompanhamento>(
           '/api/v1/integracao/dashboard-acompanhamento'
         ),
+        api.get<{ followups: Followup[] }>('/api/v1/integracao/followups'),
         api.get<Cliente[]>('/api/v1/integracao/listar-clientes').catch(
           (error) => {
             if (error.response?.status === 404) {
@@ -94,6 +109,7 @@ export default function DashboardPage() {
       });
 
       setTotalClientes(clientesResponse.data.length);
+      setFollowups(followupsResponse.data.followups || []);
 
     } catch (error: any) {
       setErro(
@@ -108,6 +124,19 @@ export default function DashboardPage() {
   useEffect(() => {
     carregarDashboard();
   }, []);
+
+  const dispensarFollowup = async (followup: Followup) => {
+    setActionLoading(`followup-${followup.key}`);
+    setErro('');
+    try {
+      await api.post('/api/v1/integracao/dispensar-followup', { followup_key: followup.key });
+      setFollowups((atuais) => atuais.filter((item) => item.key !== followup.key));
+    } catch (error: any) {
+      setErro(error.response?.data?.detail || 'Não foi possível dispensar este follow-up.');
+    } finally {
+      setActionLoading(null);
+    }
+  };
 
   const fecharEstado = async (idEstado: number) => {
     const confirmar = window.confirm(
@@ -344,121 +373,64 @@ export default function DashboardPage() {
 
       </div>
 
-      {/* Stage tracking */}
+      {/* Follow-ups */}
       <div className="space-y-4">
-
         <div>
           <h2 className="text-lg font-semibold text-surface-900 dark:text-white">
-            Clientes com etapas em aberto
+            Follow-ups
           </h2>
-
           <p className="text-sm text-surface-500 dark:text-white/60 mt-1">
-            Clientes que ainda têm etapas de venda em andamento.
+            Clientes que podem precisar de um novo contato.
           </p>
         </div>
 
         {loading ? (
-          <Card>
-            <CardBody>
-              <p className="text-center text-surface-500 py-6">
-                Carregando acompanhamentos...
-              </p>
-            </CardBody>
-          </Card>
-        ) : estadosAbertos.length === 0 ? (
+          <Card><CardBody><p className="text-center text-surface-500 py-6">Carregando follow-ups...</p></CardBody></Card>
+        ) : followups.length === 0 ? (
           <Card>
             <CardBody>
               <div className="text-center py-8">
                 <CheckCircle className="w-10 h-10 mx-auto text-green-500 mb-3" />
-
-                <p className="font-medium text-surface-900 dark:text-white">
-                  Nenhuma etapa em aberto
-                </p>
-
-                <p className="text-sm text-surface-500 mt-1">
-                  Nenhum cliente precisa de acompanhamento no momento.
-                </p>
+                <p className="font-medium text-surface-900 dark:text-white">Nenhum follow-up pendente</p>
+                <p className="text-sm text-surface-500 mt-1">Não há clientes precisando de atenção neste momento.</p>
               </div>
             </CardBody>
           </Card>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-
-            {estadosAbertos.map((estado) => (
-              <Card key={estado.id}>
+            {followups.map((followup) => (
+              <Card key={followup.key}>
                 <CardBody>
-
                   <div className="flex items-start justify-between gap-3">
-
                     <div>
-                      <h3 className="font-semibold text-surface-900 dark:text-white">
-                        {estado.nome}
-                      </h3>
-
-                      <p className="text-sm text-surface-500 mt-1">
-                        {estado.telefone || 'Telefone não informado'}
-                      </p>
+                      <h3 className="font-semibold text-surface-900 dark:text-white">{followup.nome}</h3>
+                      <p className="text-sm text-surface-500 mt-1">{followup.telefone || 'Telefone não informado'}</p>
                     </div>
-
-                    <span className="px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 whitespace-nowrap">
-                      {getTipoEstado(estado.tipo)}
+                    <span className="px-3 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 whitespace-nowrap">
+                      {followup.dias} {followup.dias === 1 ? 'dia' : 'dias'}
                     </span>
-
                   </div>
-
-                  <div className="my-5">
-
-                    <p className="text-3xl font-bold text-surface-900 dark:text-white">
-                      {formatarDias(estado.dias_aberto)}
-                    </p>
-
-                    <p className="text-sm text-surface-500 mt-1">
-                      {estado.tipo === 'INTERESSADO'
-                        ? 'O cliente continua interessado.'
-                        : estado.tipo === 'PROPOSTA'
-                        ? 'A proposta continua em aberto.'
-                        : `A etapa "${getTipoEstado(estado.tipo).toLowerCase()}" continua em aberto.`}
-                    </p>
-
+                  <div className="my-4">
+                    <p className="font-semibold text-surface-900 dark:text-white">{followup.titulo}</p>
+                    <p className="text-sm text-surface-500 mt-1">{followup.descricao}</p>
                   </div>
-
-                  {estado.descricao && (
-                    <p className="text-sm text-surface-600 dark:text-white/60 mb-3">
-                      {estado.descricao}
-                    </p>
-                  )}
-
-                  <div className="flex items-center justify-between text-xs text-surface-500 border-t border-surface-200 dark:border-surface-700 pt-3">
-                    <span>
-                      Criado em {formatarData(estado.created_at)}
-                    </span>
-
-                    <span>Etapa em aberto</span>
-                  </div>
-
-                  <div className="flex gap-2 mt-4">
-
+                  <div className="flex items-center justify-between border-t border-surface-200 dark:border-surface-700 pt-3">
+                    <span className="text-xs text-surface-500">Cliente #{followup.client_id}</span>
                     <button
-                      onClick={() => fecharEstado(estado.id)}
-                      disabled={actionLoading === `estado-${estado.id}`}
-                      className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-green-600 hover:bg-green-700 text-white text-sm font-medium transition disabled:opacity-50"
+                      onClick={() => dispensarFollowup(followup)}
+                      disabled={actionLoading === `followup-${followup.key}`}
+                      className="flex items-center gap-2 px-3 py-2 rounded-lg border border-surface-200 dark:border-surface-700 hover:bg-surface-100 dark:hover:bg-surface-800 text-sm text-surface-600 dark:text-white/70 transition disabled:opacity-50"
+                      title="Não mostrar este follow-up novamente"
                     >
-                      <CheckCircle className="w-4 h-4" />
-
-                      {actionLoading === `estado-${estado.id}`
-                        ? 'Encerrando...'
-                        : 'Encerrar etapa'}
+                      <XCircle className="w-4 h-4" />
+                      {actionLoading === `followup-${followup.key}` ? 'Dispensando...' : 'Dispensar'}
                     </button>
-
                   </div>
-
                 </CardBody>
               </Card>
             ))}
-
           </div>
         )}
-
       </div>
 
       {/* Acompanhamento de pagamentos */}
@@ -629,6 +601,123 @@ export default function DashboardPage() {
         )}
 
       </div>
+      {/* Stage tracking */}
+      <div className="space-y-4">
+
+        <div>
+          <h2 className="text-lg font-semibold text-surface-900 dark:text-white">
+            Clientes com etapas em aberto
+          </h2>
+
+          <p className="text-sm text-surface-500 dark:text-white/60 mt-1">
+            Clientes que ainda têm etapas de venda em andamento.
+          </p>
+        </div>
+
+        {loading ? (
+          <Card>
+            <CardBody>
+              <p className="text-center text-surface-500 py-6">
+                Carregando acompanhamentos...
+              </p>
+            </CardBody>
+          </Card>
+        ) : estadosAbertos.length === 0 ? (
+          <Card>
+            <CardBody>
+              <div className="text-center py-8">
+                <CheckCircle className="w-10 h-10 mx-auto text-green-500 mb-3" />
+
+                <p className="font-medium text-surface-900 dark:text-white">
+                  Nenhuma etapa em aberto
+                </p>
+
+                <p className="text-sm text-surface-500 mt-1">
+                  Nenhum cliente precisa de acompanhamento no momento.
+                </p>
+              </div>
+            </CardBody>
+          </Card>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+
+            {estadosAbertos.map((estado) => (
+              <Card key={estado.id}>
+                <CardBody>
+
+                  <div className="flex items-start justify-between gap-3">
+
+                    <div>
+                      <h3 className="font-semibold text-surface-900 dark:text-white">
+                        {estado.nome}
+                      </h3>
+
+                      <p className="text-sm text-surface-500 mt-1">
+                        {estado.telefone || 'Telefone não informado'}
+                      </p>
+                    </div>
+
+                    <span className="px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 whitespace-nowrap">
+                      {getTipoEstado(estado.tipo)}
+                    </span>
+
+                  </div>
+
+                  <div className="my-5">
+
+                    <p className="text-3xl font-bold text-surface-900 dark:text-white">
+                      {formatarDias(estado.dias_aberto)}
+                    </p>
+
+                    <p className="text-sm text-surface-500 mt-1">
+                      {estado.tipo === 'INTERESSADO'
+                        ? 'O cliente continua interessado.'
+                        : estado.tipo === 'PROPOSTA'
+                        ? 'A proposta continua em aberto.'
+                        : `A etapa "${getTipoEstado(estado.tipo).toLowerCase()}" continua em aberto.`}
+                    </p>
+
+                  </div>
+
+                  {estado.descricao && (
+                    <p className="text-sm text-surface-600 dark:text-white/60 mb-3">
+                      {estado.descricao}
+                    </p>
+                  )}
+
+                  <div className="flex items-center justify-between text-xs text-surface-500 border-t border-surface-200 dark:border-surface-700 pt-3">
+                    <span>
+                      Criado em {formatarData(estado.created_at)}
+                    </span>
+
+                    <span>Etapa em aberto</span>
+                  </div>
+
+                  <div className="flex gap-2 mt-4">
+
+                    <button
+                      onClick={() => fecharEstado(estado.id)}
+                      disabled={actionLoading === `estado-${estado.id}`}
+                      className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-green-600 hover:bg-green-700 text-white text-sm font-medium transition disabled:opacity-50"
+                    >
+                      <CheckCircle className="w-4 h-4" />
+
+                      {actionLoading === `estado-${estado.id}`
+                        ? 'Encerrando...'
+                        : 'Encerrar etapa'}
+                    </button>
+
+                  </div>
+
+                </CardBody>
+              </Card>
+            ))}
+
+          </div>
+        )}
+
+      </div>
+
 
     </div>
   );
