@@ -92,6 +92,30 @@ async def create_checkout(
     return CheckoutResponse(checkout_url=link)
 
 
+@router.post("/pix-checkout", summary="Create conventional Pix subscription")
+async def create_pix_checkout(
+    body: CheckoutRequest,
+    current_user=Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Cria assinatura mensal Pix convencional e retorna QR Code da primeira cobrança."""
+    try:
+        return await asaas_service.start_pix_subscription(
+            db,
+            current_user,
+            body.plan,
+            cpf_cnpj=body.cpf_cnpj,
+            phone=body.phone,
+            address=body.address,
+            address_number=body.address_number,
+            postal_code=body.postal_code,
+            province=body.province,
+            city=body.city,
+        )
+    except asaas_service.CheckoutError as exc:
+        raise HTTPException(status_code=exc.status_code, detail=exc.message)
+
+
 @router.post(
     "/cancel",
     response_model=CancelResponse,

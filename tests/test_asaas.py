@@ -55,6 +55,12 @@ class FakeAsaas:
             return httpx.Response(
                 200, json={"id": "chk_123", "link": "https://sandbox.asaas.com/checkoutSession/show/chk_123"}
             )
+        if request.method == "POST" and path.endswith("/subscriptions"):
+            return httpx.Response(200, json={"id": "sub_pix_123"})
+        if request.method == "GET" and path.endswith("/subscriptions/sub_pix_123/payments"):
+            return httpx.Response(200, json={"data": [{"id": "pay_pix_123", "status": "PENDING", "value": 24.9}]})
+        if request.method == "GET" and path.endswith("/payments/pay_pix_123/pixQrCode"):
+            return httpx.Response(200, json={"encodedImage": "aGVsbG8=", "payload": "000201pix-copia-cola", "expirationDate": "2026-11-15 23:59:59"})
         if request.method == "DELETE" and "/subscriptions/" in path:
             return httpx.Response(200, json={"deleted": True, "id": path.rsplit("/", 1)[-1]})
         return httpx.Response(404, json={"errors": [{"description": "não encontrado"}]})
@@ -523,3 +529,48 @@ async def test_cancel_while_subscription_is_still_being_confirmed(client: AsyncC
     assert response.status_code == 409
     assert "confirmada" in response.json()["detail"]
     assert fake_asaas.requests == []
+
+
+async def test_pix_subscription_returns_qr_and_activates_only_after_payment(client: AsyncClient, db_session, fake_asaas):
+    email = "pix-buyer@example.com"
+    headers = await _register(client, email)
+    body = {
+        "plan": "pro", "cpf_cnpj": VALID_CPF, "phone": "27999998888",
+        "address": "Rua das Flores", "address_number": "123", "postal_code": "29900000",
+        "province": "Centro", "city": "3204906",
+    }
+
+    response = await client.post("/api/v1/subscriptions/pix-checkout", json=body, headers=headers)
+
+    assert response.status_code == 200
+    result = response.json()
+    assert result["subscription_id"] == "sub_pix_123"
+    assert result["payment_id"] == "pay_pix_123"
+    assert result["payload"] == "000201pix-copia-cola"
+    assert result["encoded_image"] == "aGVsbG8="
+    subscription_request = fake_asaas.calls("POST", "/subscriptions")[0]
+    sent = json.loads(subscription_request.content)
+    assert sent["billingType"] == "PIX"
+    assert sent["cycle"] == "MONTHLY"
+    assert sent["value"] == 24.9
+    assert sent["pixAutomaticAuthorizationMode"] == "DISABLED"
+
+    user = await _user(db_session, email)
+    row = await _sub(db_session, user.id)
+    assert row.plan_name == "pro"
+    assert row.status == "incomplete"
+    assert await get_user_plan(db_session, user.id) == "free"
+
+    await _send(
+        client,
+        _event(
+            "PAYMENT_RECEIVED",
+            payment={
+                "id": "pay_pix_123", "subscription": "sub_pix_123", "customer": "cus_123",
+                "value": 24.9, "paymentDate": "2026-11-14", "dueDate": "2026-11-14",
+            },
+        ),
+    )
+    row = await _sub(db_session, user.id)
+    assert row.status == "active"
+    assert await get_user_plan(db_session, user.id) == "pro"

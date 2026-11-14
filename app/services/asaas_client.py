@@ -174,6 +174,42 @@ async def create_checkout(
     return checkout_id, link
 
 
+async def create_pix_subscription(
+    *,
+    customer_id: str,
+    value: Decimal,
+    next_due_date: str,
+    description: str,
+    external_reference: str,
+) -> str:
+    """Cria assinatura mensal via Pix convencional (cada mensalidade é paga pelo cliente)."""
+    payload = {
+        "customer": customer_id,
+        "billingType": "PIX",
+        "value": float(value),
+        "nextDueDate": next_due_date,
+        "cycle": "MONTHLY",
+        "description": description,
+        "externalReference": external_reference,
+        "pixAutomaticAuthorizationMode": "DISABLED",
+    }
+    response = await _request("POST", "/subscriptions", json=payload)
+    _raise_for_status(response, "criar assinatura Pix")
+    return response.json()["id"]
+
+
+async def list_subscription_payments(subscription_id: str) -> list[dict]:
+    response = await _request("GET", f"/subscriptions/{subscription_id}/payments")
+    _raise_for_status(response, "listar cobranças da assinatura Pix")
+    return response.json().get("data") or []
+
+
+async def get_pix_qr_code(payment_id: str) -> dict:
+    response = await _request("GET", f"/payments/{payment_id}/pixQrCode")
+    _raise_for_status(response, "obter QR Code Pix")
+    return response.json()
+
+
 async def cancel_checkout(checkout_id: str) -> None:
     response = await _request("POST", f"/checkouts/{checkout_id}/cancel")
     _raise_for_status(response, "cancelar checkout")

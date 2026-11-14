@@ -17,6 +17,15 @@ interface Subscription {
   current_period_end: string | null;
 }
 
+interface PixCheckout {
+  subscription_id: string;
+  payment_id: string;
+  encoded_image: string | null;
+  payload: string | null;
+  expiration_date: string | null;
+  value: number;
+}
+
 interface Plan {
   name: string;
   display_name: string;
@@ -102,6 +111,8 @@ export default function BillingPage() {
   const [nomeCidade, setNomeCidade] = useState('');
   const [pedirDocumento, setPedirDocumento] = useState<string | null>(null);
   const [processando, setProcessando] = useState(false);
+  const [formaPagamento, setFormaPagamento] = useState<'card' | 'pix'>('card');
+  const [pixCheckout, setPixCheckout] = useState<PixCheckout | null>(null);
   const timer = useRef<number | undefined>(undefined);
 
   const carregarAssinatura = useCallback(
@@ -157,6 +168,25 @@ export default function BillingPage() {
     return () => window.clearTimeout(timer.current);
   }, [carregarAssinatura]);
 
+  useEffect(() => {
+    if (!pixCheckout) return;
+    let tentativas = 0;
+    const verificarPagamentoPix = async () => {
+      const atual = await carregarAssinatura();
+      tentativas += 1;
+      if (atual?.plan_name === 'pro' && atual.status === 'active') {
+        toast.success('Pix confirmado! Seu plano Pro foi ativado.');
+        setPixCheckout(null);
+        return;
+      }
+      if (tentativas >= 90) {
+        window.clearInterval(intervalo);
+      }
+    };
+    const intervalo = window.setInterval(verificarPagamentoPix, 5000);
+    return () => window.clearInterval(intervalo);
+  }, [pixCheckout, carregarAssinatura]);
+
   // O acesso vale para assinatura ativa e também para cancelada que ainda está no período já pago.
   const assinaturaAtiva = sub?.status === 'active' || sub?.status === 'trialing';
   const periodoPagoAtivo =
@@ -182,7 +212,7 @@ export default function BillingPage() {
     }
     setProcessando(true);
     try {
-      const r = await api.post('/api/v1/subscriptions/checkout', {
+      const dados = {
         plan: plan.name,
         cpf_cnpj: documento.trim(),
         phone: telefone.trim(),
@@ -191,8 +221,17 @@ export default function BillingPage() {
         postal_code: cep.trim(),
         province: bairro.trim(),
         city: cidade.trim(),
-      });
-      window.location.href = r.data.checkout_url;
+      };
+      if (formaPagamento === 'pix') {
+        const r = await api.post<PixCheckout>('/api/v1/subscriptions/pix-checkout', dados);
+        setPixCheckout(r.data);
+        await carregarAssinatura();
+        setProcessando(false);
+        toast.success('QR Code Pix gerado. Faça o pagamento para ativar seu plano.');
+      } else {
+        const r = await api.post('/api/v1/subscriptions/checkout', dados);
+        window.location.href = r.data.checkout_url;
+      }
     } catch (error) {
       toast.error(mensagemDeErro(error, 'Não foi possível iniciar o pagamento.'));
       setProcessando(false);
@@ -319,6 +358,15 @@ export default function BillingPage() {
                       <input type="text" value={nomeCidade} readOnly placeholder="Cidade (identificada pelo CEP)" aria-label="Cidade" className="w-full rounded-lg border border-surface-200 dark:border-white/10 bg-surface-50 dark:bg-white/5 px-3 py-2 text-sm text-surface-900 dark:text-white" />
                     </div>
                   )}
+                  {pedirDocumento === plan.name && (
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium text-surface-700 dark:text-white/80">Forma de pagamento</p>
+                      <div className="grid grid-cols-2 gap-2">
+                        <button type="button" onClick={() => { setFormaPagamento('card'); setPixCheckout(null); }} className={`rounded-lg border px-3 py-2 text-sm ${formaPagamento === 'card' ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/20' : 'border-surface-200 dark:border-white/10'}`}>Cartão de crédito</button>
+                        <button type="button" onClick={() => { setFormaPagamento('pix'); setPixCheckout(null); }} className={`rounded-lg border px-3 py-2 text-sm ${formaPagamento === 'pix' ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/20' : 'border-surface-200 dark:border-white/10'}`}>Pix mensal</button>
+                      </div>
+                    </div>
+                  )}
                   <Button
                     variant={plan.is_popular ? 'primary' : 'outline'}
                     className="w-full"
@@ -338,9 +386,34 @@ export default function BillingPage() {
         ))}
       </div>
 
+      {pixCheckout && (
+        <Card variant="gradient-border">
+          <CardBody className="space-y-4">
+            <h2 className="text-lg font-semibold text-surface-900 dark:text-white">Pague sua primeira mensalidade via Pix</h2>
+            <p className="text-sm text-surface-600 dark:text-white/60">O plano será ativado automaticamente depois que o Asaas confirmar o pagamento.</p>
+            {pixCheckout.encoded_image && (
+              <img
+                src={`data:image/png;base64,${pixCheckout.encoded_image}`}
+                alt="QR Code Pix para pagamento da assinatura"
+                className="mx-auto w-56 h-56 object-contain"
+              />
+            )}
+            {pixCheckout.payload && (
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-surface-700 dark:text-white/80">Pix Copia e Cola</label>
+                <textarea readOnly value={pixCheckout.payload} rows={3} className="w-full rounded-lg border border-surface-200 dark:border-white/10 bg-surface-50 dark:bg-white/5 p-3 text-xs text-surface-900 dark:text-white" />
+                <Button className="w-full" onClick={() => navigator.clipboard.writeText(pixCheckout.payload || '').then(() => toast.success('Código Pix copiado.')).catch(() => toast.error('Não foi possível copiar o código.'))}>
+                  Copiar código Pix
+                </Button>
+              </div>
+            )}
+            <p className="text-xs text-surface-500">Após o pagamento, aguarde alguns instantes para a confirmação automática. Cada mensalidade seguinte terá uma nova cobrança Pix.</p>
+          </CardBody>
+        </Card>
+      )}
+
       <p className="text-sm text-surface-500">
-        O pagamento é feito em uma página segura do Asaas, com cobrança mensal no cartão de crédito. Você pode
-        cancelar quando quiser e mantém o acesso até o fim do período já pago.
+        Você pode pagar a assinatura mensal com cartão de crédito ou Pix. No Pix, uma nova cobrança será gerada a cada mês e deverá ser paga manualmente. Você pode cancelar quando quiser e mantém o acesso até o fim do período já pago.
       </p>
     </div>
   );

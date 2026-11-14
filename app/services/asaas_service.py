@@ -110,8 +110,10 @@ async def start_checkout(
 
     # Não permite assinar de novo enquanto já houver assinatura (evita cobrança duplicada).
     row = await _get_subscription_row(db, user.id)
-    if await get_user_plan(db, user.id) != "free" or (row.asaas_subscription_id and row.status in LIVE_STATUSES):
-        raise CheckoutError(409, "Você já tem uma assinatura. Cancele-a antes de contratar novamente.")
+    if await get_user_plan(db, user.id) != "free" or (
+        row.asaas_subscription_id and row.status in LIVE_STATUSES | {"incomplete"}
+    ):
+        raise CheckoutError(409, "Você já tem uma assinatura ou pagamento Pix pendente. Cancele-o antes de contratar novamente.")
 
     # Reaproveita um checkout ainda válido (evita criar vários para o mesmo pedido).
     pending = await db.execute(
@@ -406,3 +408,71 @@ async def _on_payment_event(db: AsyncSession, event: str, payment: dict) -> None
         row.status = "canceled"
         row.plan_name = "free"
         row.current_period_end = _now()
+
+
+async def start_pix_subscription(
+    db: AsyncSession, user: User, plan_name: str, *, cpf_cnpj: str | None,
+    phone: str | None, address: str | None, address_number: str | None,
+    postal_code: str | None, province: str | None, city: str | None,
+) -> dict:
+    """Cria ou recupera uma assinatura mensal de Pix convencional e retorna o QR Code inicial."""
+    plan = get_plan(plan_name)
+    if plan is None or not plan.purchasable:
+        raise CheckoutError(400, "Este plano não está disponível para contratação.")
+
+    row = await _get_subscription_row(db, user.id)
+    if await get_user_plan(db, user.id) != "free" or (
+        row.asaas_subscription_id and row.status in LIVE_STATUSES
+    ):
+        raise CheckoutError(409, "Você já tem uma assinatura. Cancele-a antes de contratar novamente.")
+    if row.status == "incomplete" and row.asaas_subscription_id and row.plan_name != plan.name:
+        raise CheckoutError(409, "Você já tem um pagamento Pix pendente para outro plano. Cancele-o antes de continuar.")
+
+    # Reutiliza uma assinatura incompleta se a primeira resposta não chegou ao navegador.
+    subscription_id = None
+    if row.status == "incomplete" and row.plan_name == plan.name and row.asaas_subscription_id:
+        subscription_id = row.asaas_subscription_id
+    else:
+        customer_id = await _ensure_customer(
+            db, user, cpf_cnpj=cpf_cnpj, phone=phone, address=address,
+            address_number=address_number, postal_code=postal_code, province=province, city=city,
+        )
+        try:
+            subscription_id = await asaas_client.create_pix_subscription(
+                customer_id=customer_id,
+                value=plan.price_monthly,
+                next_due_date=datetime.now(BRT).strftime("%Y-%m-%d"),
+                description=f"Assinatura mensal TexasCRM — Plano {plan.display_name}",
+                external_reference=f"user:{user.id}:plan:{plan.name}:pix",
+            )
+        except asaas_client.AsaasError as exc:
+            raise CheckoutError(502 if exc.status_code is None or exc.status_code >= 500 else 400, exc.message) from exc
+
+        # Persiste o vínculo antes de buscar o QR: um retry não cria outra assinatura.
+        row.asaas_subscription_id = subscription_id
+        row.plan_name = plan.name
+        row.status = "incomplete"
+        row.current_period_start = None
+        row.current_period_end = None
+        await db.commit()
+
+    try:
+        payments = await asaas_client.list_subscription_payments(subscription_id)
+        if not payments:
+            raise CheckoutError(409, "A cobrança Pix está sendo gerada pelo Asaas. Aguarde alguns instantes e tente novamente.")
+        payment = next(
+            (item for item in payments if item.get("status") not in {"DELETED", "REFUNDED"}),
+            payments[0],
+        )
+        qr = await asaas_client.get_pix_qr_code(payment["id"])
+    except asaas_client.AsaasError as exc:
+        raise CheckoutError(502 if exc.status_code is None or exc.status_code >= 500 else 400, exc.message) from exc
+
+    return {
+        "subscription_id": subscription_id,
+        "payment_id": payment["id"],
+        "encoded_image": qr.get("encodedImage"),
+        "payload": qr.get("payload"),
+        "expiration_date": qr.get("expirationDate"),
+        "value": float(payment.get("value") or plan.price_monthly),
+    }
