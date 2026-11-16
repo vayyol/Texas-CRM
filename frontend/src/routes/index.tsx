@@ -20,6 +20,7 @@ import BillingPage from '@/pages/settings/BillingPage';
 //news
 import CustomersPage from '@/pages/customers/CustomersPage';
 import CRMPage from '@/pages/crm/CRMPage';
+import WhatsAppPage from '@/pages/whatsapp/WhatsAppPage';
 
 // Admin pages
 import AdminDashboardPage from '@/pages/admin/AdminDashboardPage';
@@ -64,6 +65,7 @@ export const router = createBrowserRouter([
           { path: '/settings/billing', element: <BillingPage /> },
           { path: '/clientes', element: <CustomersPage /> },//new
           { path: '/crm', element: <CRMPage /> },//new
+          { path: '/whatsapp', element: <WhatsAppPage /> },
 
           // ── Admin Routes ──────────────────
           {
