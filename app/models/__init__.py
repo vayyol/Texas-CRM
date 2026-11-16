@@ -10,6 +10,7 @@ from app.models.prompt_template import PromptTemplate
 from app.models.subscription import Subscription
 from app.models.usage import UsageRecord
 from app.models.user import User
+from app.models.whatsapp import WhatsAppConsent, WhatsAppConversation, WhatsAppMessage, WhatsAppSession
 
 __all__ = [
     "User",
@@ -21,4 +22,8 @@ __all__ = [
     "Conversation",
     "Message",
     "PromptTemplate",
+    "WhatsAppConsent",
+    "WhatsAppSession",
+    "WhatsAppConversation",
+    "WhatsAppMessage",
 ]

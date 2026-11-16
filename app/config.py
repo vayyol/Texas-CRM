@@ -55,6 +55,11 @@ class Settings(BaseSettings):
     ASAAS_WEBHOOK_TOKEN: SecretStr = SecretStr("")
     ASAAS_CHECKOUT_MINUTES_TO_EXPIRE: int = 60  # o Asaas aceita de 10 a 1440
 
+    # ── WhatsApp via serviço WAHA independente ──────────────
+    WAHA_BASE_URL: str = ""
+    WAHA_API_KEY: SecretStr = SecretStr("")
+    WHATSAPP_TERMS_VERSION: str = "1.0"
+
     # ── OpenAI-compatible API ────────────────────────────────
     OPENAI_API_KEY: str = ""
     OPENAI_API_BASE: str = "https://api.openai.com/v1"

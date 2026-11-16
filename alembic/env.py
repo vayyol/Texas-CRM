@@ -4,15 +4,15 @@ Alembic async migration environment.
 import asyncio
 from logging.config import fileConfig
 
-from alembic import context
 from sqlalchemy import pool
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
+from alembic import context
 from app.config import settings
 from app.database import Base
 
 # Import ALL models so Alembic can detect them
-from app.models import user, subscription, api_key, usage, chat, prompt_template, asaas  # noqa: F401
+from app.models import api_key, asaas, chat, prompt_template, subscription, usage, user, whatsapp  # noqa: F401
 
 config = context.config
 
