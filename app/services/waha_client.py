@@ -1,4 +1,4 @@
-"""Cliente HTTP privado para o serviço WAHA."""
+﻿"""Cliente HTTP privado para o serviÃ§o WAHA."""
 from __future__ import annotations
 
 import httpx
@@ -18,7 +18,7 @@ def _configuration() -> tuple[str, str]:
     base_url = settings.WAHA_BASE_URL.strip().rstrip("/")
     api_key = settings.WAHA_API_KEY.get_secret_value()
     if not base_url or not api_key:
-        raise WahaNotConfiguredError("Integração WAHA não configurada no backend.")
+        raise WahaNotConfiguredError("IntegraÃ§Ã£o WAHA nÃ£o configurada no backend.")
     return base_url, api_key
 
 
@@ -34,10 +34,10 @@ async def _request(method: str, path: str, **kwargs):
                 return None
             return response.json()
     except httpx.HTTPStatusError as exc:
-        # Não propaga corpo da resposta, que pode conter dados operacionais.
+        # NÃ£o propaga corpo da resposta, que pode conter dados operacionais.
         raise WahaAPIError(f"WAHA respondeu HTTP {exc.response.status_code}.") from exc
     except httpx.HTTPError as exc:
-        raise WahaAPIError("Não foi possível comunicar com o serviço WAHA.") from exc
+        raise WahaAPIError("NÃ£o foi possÃ­vel comunicar com o serviÃ§o WAHA.") from exc
 
 
 async def create_session(name: str) -> dict:
@@ -55,10 +55,11 @@ async def start_session(name: str) -> dict:
 async def get_qr(name: str) -> dict:
     return await _request(
         "GET",
-        f"/api/{name}/auth/qr?format=image",
+        f"/api/{name}/auth/qr?format=raw",
         headers={"Accept": "application/json"},
     )
 
 
 async def delete_session(name: str) -> None:
     await _request("DELETE", f"/api/sessions/{name}")
+
