@@ -48,5 +48,17 @@ async def get_session(name: str) -> dict:
     return await _request("GET", f"/api/sessions/{name}")
 
 
+async def start_session(name: str) -> dict:
+    return await _request("POST", f"/api/sessions/{name}/start", json={})
+
+
+async def get_qr(name: str) -> dict:
+    return await _request(
+        "GET",
+        f"/api/{name}/auth/qr?format=image",
+        headers={"Accept": "application/json"},
+    )
+
+
 async def delete_session(name: str) -> None:
     await _request("DELETE", f"/api/sessions/{name}")

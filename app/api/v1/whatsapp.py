@@ -111,3 +111,41 @@ async def create_whatsapp_session(
     db.add(session)
     await db.flush()
     return {"name": session.session_name, "status": session.status, "created": True}
+
+
+@router.post("/session/start", summary="Iniciar sessão WhatsApp")
+async def start_whatsapp_session(
+    current_user=Depends(get_current_active_user), db: AsyncSession = Depends(get_db)
+):
+    result = await db.execute(select(WhatsAppSession).where(WhatsAppSession.user_id == current_user.id))
+    session = result.scalar_one_or_none()
+    if session is None:
+        raise HTTPException(status_code=404, detail="Nenhuma sessão WhatsApp foi criada.")
+    try:
+        remote = await waha_client.start_session(session.session_name)
+    except waha_client.WahaNotConfiguredError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except waha_client.WahaAPIError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+    session.status = remote.get("status", "STARTING") if isinstance(remote, dict) else "STARTING"
+    await db.flush()
+    return {"name": session.session_name, "status": session.status}
+
+
+@router.get("/session/qr", summary="Obter QR Code da sessão WhatsApp")
+async def get_whatsapp_qr(
+    current_user=Depends(get_current_active_user), db: AsyncSession = Depends(get_db)
+):
+    result = await db.execute(select(WhatsAppSession).where(WhatsAppSession.user_id == current_user.id))
+    session = result.scalar_one_or_none()
+    if session is None:
+        raise HTTPException(status_code=404, detail="Nenhuma sessão WhatsApp foi criada.")
+    try:
+        qr = await waha_client.get_qr(session.session_name)
+    except waha_client.WahaNotConfiguredError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except waha_client.WahaAPIError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+    if not isinstance(qr, dict) or not qr.get("data"):
+        raise HTTPException(status_code=409, detail="QR Code ainda não está disponível. Tente novamente em alguns segundos.")
+    return {"mimetype": qr.get("mimetype", "image/png"), "data": qr["data"]}
