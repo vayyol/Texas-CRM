@@ -59,6 +59,7 @@ class Settings(BaseSettings):
     WAHA_BASE_URL: str = ""
     WAHA_API_KEY: SecretStr = SecretStr("")
     WHATSAPP_TERMS_VERSION: str = "1.0"
+    WHATSAPP_WEBHOOK_URL: str = "https://texas-crm.onrender.com/api/v1/whatsapp/webhook"
 
     # ── OpenAI-compatible API ────────────────────────────────
     OPENAI_API_KEY: str = ""

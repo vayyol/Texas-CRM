@@ -66,3 +66,18 @@ async def test_accept_terms_and_create_session(client: AsyncClient, monkeypatch)
     assert status_response.status_code == 200
     assert status_response.json()["terms_accepted"] is True
     assert status_response.json()["session"]["name"] == created.json()["name"]
+
+
+@pytest.mark.asyncio
+async def test_whatsapp_webhook_rejects_requests_without_secret(client: AsyncClient):
+    response = await client.post(
+        "/api/v1/whatsapp/webhook",
+        json={"event": "message", "session": "tc_invalid", "payload": {}},
+    )
+    assert response.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_whatsapp_conversations_require_authentication(client: AsyncClient):
+    response = await client.get("/api/v1/whatsapp/conversations")
+    assert response.status_code == 401

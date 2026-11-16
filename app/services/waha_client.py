@@ -63,3 +63,31 @@ async def get_qr(name: str) -> dict:
 async def delete_session(name: str) -> None:
     await _request("DELETE", f"/api/sessions/{name}")
 
+
+async def update_session_webhooks(name: str) -> dict:
+    _, api_key = _configuration()
+    return await _request(
+        "PUT",
+        f"/api/sessions/{name}",
+        json={
+            "config": {
+                "webhooks": [
+                    {
+                        "url": settings.WHATSAPP_WEBHOOK_URL,
+                        "events": ["message", "session.status"],
+                        "customHeaders": [
+                            {"name": "X-TexasCRM-Webhook-Key", "value": api_key}
+                        ],
+                    }
+                ]
+            }
+        },
+    )
+
+
+async def send_text(name: str, chat_id: str, text: str) -> dict:
+    return await _request(
+        "POST",
+        "/api/sendText",
+        json={"session": name, "chatId": chat_id, "text": text, "linkPreview": False},
+    )
