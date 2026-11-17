@@ -56,6 +56,20 @@ async def get_whatsapp_status(
     consent = consent_result.scalar_one_or_none()
     session_result = await db.execute(select(WhatsAppSession).where(WhatsAppSession.user_id == current_user.id))
     session = session_result.scalar_one_or_none()
+    # Consulta o estado real no WAHA: depender apenas do webhook pode deixar
+    # o banco preso em STARTING e impedir o frontend de pedir o QR Code.
+    if session is not None:
+        try:
+            remote = await waha_client.get_session(session.session_name)
+            if isinstance(remote, dict) and isinstance(remote.get("status"), str):
+                session.status = remote["status"]
+                me = remote.get("me")
+                if isinstance(me, dict) and isinstance(me.get("id"), str):
+                    session.phone_number = me["id"].split("@", 1)[0]
+                await db.flush()
+        except (waha_client.WahaAPIError, waha_client.WahaNotConfiguredError):
+            # Mantém o último estado conhecido se a consulta remota falhar.
+            pass
     return {
         "integration_configured": bool(settings.WAHA_BASE_URL and settings.WAHA_API_KEY.get_secret_value()),
         "terms_version": settings.WHATSAPP_TERMS_VERSION,
