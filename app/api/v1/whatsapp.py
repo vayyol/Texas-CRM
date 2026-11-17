@@ -164,6 +164,11 @@ async def get_whatsapp_qr(
     except waha_client.WahaNotConfiguredError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     except waha_client.WahaAPIError as exc:
+        if exc.status_code == 422:
+            raise HTTPException(
+                status_code=409,
+                detail="O WhatsApp ainda está preparando o QR Code. Aguarde alguns segundos.",
+            ) from exc
         raise HTTPException(status_code=502, detail=str(exc)) from exc
     if not isinstance(qr, dict) or not qr.get("data"):
         raise HTTPException(status_code=409, detail="QR Code ainda não está disponível. Tente novamente em alguns segundos.")

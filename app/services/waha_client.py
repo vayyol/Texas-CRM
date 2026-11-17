@@ -70,7 +70,7 @@ async def start_session(name: str) -> dict:
 async def get_qr(name: str) -> dict:
     return await _request(
         "GET",
-        f"/api/{name}/auth/qr?format=raw",
+        f"/api/{name}/auth/qr?format=image",
         headers={"Accept": "application/json"},
     )
 

@@ -82,6 +82,9 @@ export default function WhatsAppPage() {
           setConnecting(false);
           return;
         }
+        // O WAHA só disponibiliza QR quando a sessão chega a SCAN_QR_CODE.
+        // Consultar durante STARTING pode retornar 422 e não é uma falha definitiva.
+        if (current.session?.status !== 'SCAN_QR_CODE') return;
         try {
           const data = await apiGet<{ mimetype: string; data: string }>('/api/v1/whatsapp/session/qr');
           if (active) setQr(`data:${data.mimetype};base64,${data.data}`);
