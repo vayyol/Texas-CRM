@@ -11,7 +11,9 @@ class WahaNotConfiguredError(RuntimeError):
 
 
 class WahaAPIError(RuntimeError):
-    pass
+    def __init__(self, message: str, status_code: int | None = None):
+        super().__init__(message)
+        self.status_code = status_code
 
 
 def _configuration() -> tuple[str, str]:
@@ -35,7 +37,10 @@ async def _request(method: str, path: str, **kwargs):
             return response.json()
     except httpx.HTTPStatusError as exc:
         # NÃ£o propaga corpo da resposta, que pode conter dados operacionais.
-        raise WahaAPIError(f"WAHA respondeu HTTP {exc.response.status_code}.") from exc
+        raise WahaAPIError(
+            f"WAHA respondeu HTTP {exc.response.status_code}.",
+            status_code=exc.response.status_code,
+        ) from exc
     except httpx.HTTPError as exc:
         raise WahaAPIError("NÃ£o foi possÃ­vel comunicar com o serviÃ§o WAHA.") from exc
 
@@ -46,6 +51,16 @@ async def create_session(name: str) -> dict:
 
 async def get_session(name: str) -> dict:
     return await _request("GET", f"/api/sessions/{name}")
+
+
+async def ensure_session(name: str) -> dict:
+    """Garante que a sessão salva no TexasCRM também exista no WAHA."""
+    try:
+        return await get_session(name)
+    except WahaAPIError as exc:
+        if exc.status_code != 404:
+            raise
+        return await create_session(name)
 
 
 async def start_session(name: str) -> dict:

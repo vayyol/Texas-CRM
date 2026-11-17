@@ -138,6 +138,8 @@ async def start_whatsapp_session(
     if session is None:
         raise HTTPException(status_code=404, detail="Nenhuma sessão WhatsApp foi criada.")
     try:
+        # Recupera sessões que ficaram salvas no banco, mas foram removidas do WAHA.
+        await waha_client.ensure_session(session.session_name)
         await waha_client.update_session_webhooks(session.session_name)
         remote = await waha_client.start_session(session.session_name)
     except waha_client.WahaNotConfiguredError as exc:
