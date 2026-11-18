@@ -8,7 +8,7 @@ from app.services.whatsapp_followups import (
 )
 
 
-def test_all_four_followup_types_are_detected():
+def test_existing_and_new_followup_types_are_detected():
     now = datetime.now(timezone.utc)
     today = datetime.now(LOCAL_TZ).date().isoformat()
     clients = [
@@ -69,11 +69,12 @@ def test_all_four_followup_types_are_detected():
         "installment_overdue",
         "sale_lost",
         "proposal_no_reply",
+        "proposal_created",
     }
-    assert len(candidates) == 4
+    assert len(candidates) == 5
 
 
-def test_open_proposal_only_triggers_after_one_day_and_closed_is_ignored():
+def test_open_proposal_can_be_sent_immediately_and_closed_is_ignored():
     now = datetime.now(timezone.utc)
     clients = [{
         "id": 1,
@@ -97,7 +98,31 @@ def test_open_proposal_only_triggers_after_one_day_and_closed_is_ignored():
 
     candidates = _build_candidates(clients, [], now - timedelta(days=5), now)
 
-    assert candidates == []
+    assert [item["followup_type"] for item in candidates] == ["proposal_created"]
+
+
+def test_contact_interested_and_disinterested_open_states_trigger_after_two_days():
+    now = datetime.now(timezone.utc)
+    clients = [{
+        "id": 8,
+        "nome": "Joana",
+        "telefone": "73999991234",
+        "estados": [
+            {"id": 11, "tipo": "CONTATO", "status": "ABERTO", "created_at": (now - timedelta(days=3)).isoformat()},
+            {"id": 12, "tipo": "INTERESSADO", "status": "ABERTO", "created_at": (now - timedelta(days=2, hours=1)).isoformat()},
+            {"id": 13, "tipo": "DESINTERESSADO", "status": "ABERTO", "created_at": (now - timedelta(days=4)).isoformat()},
+            {"id": 14, "tipo": "CONTATO", "status": "FECHADO", "created_at": (now - timedelta(days=5)).isoformat()},
+            {"id": 15, "tipo": "CONTATO", "status": "ABERTO", "created_at": (now - timedelta(days=1)).isoformat()},
+        ],
+    }]
+
+    candidates = _build_candidates(clients, [], now - timedelta(days=5), now)
+
+    assert len(candidates) == 3
+    assert {item["event_key"] for item in candidates} == {
+        "stage-idle:11", "stage-idle:12", "stage-idle:13"
+    }
+    assert {item["followup_type"] for item in candidates} == {"client_stage_idle"}
 
 
 def test_message_variables_and_phone_normalization():

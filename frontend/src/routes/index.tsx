@@ -11,7 +11,8 @@ import RegisterPage from '@/pages/auth/RegisterPage';
 import OAuthCallbackPage from '@/pages/auth/OAuthCallbackPage';
 
 // Protected pages
-import DashboardPage from '@/pages/dashboard/DashboardPage';
+import ManualTrackingPage from '@/pages/dashboard/DashboardPage';
+import DashboardOverviewPage from '@/pages/dashboard/DashboardOverviewPage';
 import ChatPage from '@/pages/chat/ChatPage';
 import TemplatesPage from '@/pages/templates/TemplatesPage';
 import ProfilePage from '@/pages/settings/ProfilePage';
@@ -58,7 +59,8 @@ export const router = createBrowserRouter([
       {
         element: <AppLayout />,
         children: [
-          { path: '/dashboard', element: <DashboardPage /> },
+          { path: '/dashboard', element: <DashboardOverviewPage /> },
+          { path: '/acompanhamento-manual', element: <ManualTrackingPage /> },
           { path: '/chat', element: <ChatPage /> },
           { path: '/templates', element: <TemplatesPage /> },
           { path: '/settings/profile', element: <ProfilePage /> },

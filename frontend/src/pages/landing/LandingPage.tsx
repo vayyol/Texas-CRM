@@ -8,8 +8,11 @@ const features = [
   { icon: Activity, title: 'Acompanhamento de cada etapa', desc: 'Registre contatos, interessados, orçamentos e propostas, e saiba quais vendas foram realizadas ou não se concretizaram.' },
   { icon: Clock, title: 'Quem precisa de atenção agora', desc: 'Veja clientes há muito tempo sem contato e orçamentos que ainda não receberam resposta, antes que a oportunidade esfrie.' },
   { icon: CreditCard, title: 'Controle de pagamentos', desc: 'Monitore parcelas, pagamentos próximos do vencimento e valores em atraso, sem depender da memória.' },
-  { icon: MessageSquare, title: 'Retorno pelo WhatsApp', desc: 'Identifique quem precisa de um retorno e facilite o contato com o cliente pelo WhatsApp.' },
-  { icon: BarChart3, title: 'Estatísticas e reativação', desc: 'Analise seus resultados comerciais e encontre clientes antigos com potencial para voltar a comprar.' },
+  { icon: MessageSquare, title: 'WhatsApp conectado ao seu negócio', desc: 'Conecte seu próprio número pelo QR Code e envie mensagens diretamente aos clientes, sem precisar alternar entre várias ferramentas.' },
+  { icon: Clock, title: 'Follow-ups personalizados e automáticos', desc: 'Configure mensagens para orçamentos enviados, clientes sem retorno, vendas não concluídas e cobranças. Você escolhe os textos e quais situações devem ser automatizadas.' },
+  { icon: CreditCard, title: 'Cobranças e parcelas em acompanhamento', desc: 'Tenha registros de parcelas vencidas e situações que precisam de cobrança, com opção de enviar pelo WhatsApp ou fazer o contato manualmente.' },
+  { icon: BarChart3, title: 'Dashboard para decidir o próximo passo', desc: 'Visualize clientes por etapa, evolução das vendas, oportunidades em aberto, atividades recentes e quem precisa da sua atenção.' },
+  { icon: Activity, title: 'Histórico do relacionamento', desc: 'Consulte as movimentações registradas e acompanhe o caminho de cada cliente, do primeiro contato à venda.' },
 ];
 
 const plans = [
@@ -33,7 +36,11 @@ const plans = [
       'Cadastro ilimitado de clientes',
       'Edição de clientes cadastrados',
       'Registro do relacionamento com os clientes',
-      'Análise de estatísticas',
+      'Dashboard completo com indicadores comerciais',
+      'Conexão com WhatsApp pelo QR Code',
+      'Mensagens de follow-up personalizadas',
+      'Envio automático de cobranças e follow-ups',
+      'Histórico de mensagens enviadas',
       'Suporte prioritário',
     ],
     cta: 'Assinar o Pro',

@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, MessageSquare, MessageCircle, FileText, Key, CreditCard, User, Shield, Users, ChevronLeft, ChevronRight, BellRing } from 'lucide-react';
+import { LayoutDashboard, MessageCircle, FileText, CreditCard, User, Shield, Users, ChevronLeft, ChevronRight, BellRing, ClipboardList } from 'lucide-react';
 import { useAuth } from '@/providers/AuthProvider';
 import { LogoMark } from '@/components/ui/Logo';
 
@@ -11,8 +11,9 @@ interface SidebarProps {
 
 const navItems = [
   { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { path: '/clientes', label: 'Clientes', icon: Users },//new
-  { path: '/crm', label: 'CRM', icon: FileText },//new
+  { path: '/acompanhamento-manual', label: 'Acompanhamento manual', icon: ClipboardList },
+  { path: '/clientes', label: 'Clientes', icon: Users },
+  { path: '/crm', label: 'CRM', icon: FileText },
   { path: '/whatsapp', label: 'WhatsApp', icon: MessageCircle },
   { path: '/followups', label: 'Cobranças e follow-ups', icon: BellRing },
   { path: '/settings/billing', label: 'Assinatura', icon: CreditCard },

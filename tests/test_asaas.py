@@ -143,7 +143,8 @@ async def test_plans_catalog(client: AsyncClient):
     assert plans["pro"]["price_monthly"] == 24.9
     assert plans["pro"]["purchasable"] is True
     assert plans["free"]["purchasable"] is False
-    assert plans["enterprise"]["purchasable"] is False
+    assert set(plans) == {"free", "pro"}
+    assert any("WhatsApp" in feature["name"] for feature in plans["pro"]["features"])
 
 
 # ── Checkout ─────────────────────────────────────────────────

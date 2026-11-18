@@ -62,6 +62,22 @@ FOLLOWUP_TYPES = {
             "conversar sobre a proposta, estou à disposição!"
         ),
     },
+    "proposal_created": {
+        "title": "Enviar orçamento",
+        "description": "Envie o orçamento ao cliente assim que ele for criado.",
+        "default_message": (
+            "Olá, {nome}! Preparei o orçamento de {descricao}, no valor de {valor_venda}. "
+            "Estou enviando para você analisar. Qualquer dúvida, estou à disposição!"
+        ),
+    },
+    "client_stage_idle": {
+        "title": "Retomar contato",
+        "description": "Contato, interessado ou desinteressado sem movimentação há 2 dias.",
+        "default_message": (
+            "Olá, {nome}! Tudo bem? Estou passando para saber se podemos dar continuidade "
+            "à nossa conversa sobre {descricao}. Se precisar de algo, conte comigo!"
+        ),
+    },
 }
 
 
@@ -176,31 +192,28 @@ def _build_candidates(clients: list[dict], payments: list[dict], cursor: datetim
                 continue
             description = str(state.get("descricao") or "sua compra")
             value = _money(state.get("valor_total"))
+            context = {"nome": name, "descricao": description, "valor_venda": value}
+            state_status = state.get("status")
+            state_candidates = []
             if state_type == "VENDA_REALIZADA":
-                eligible_at = created_at
-                followup_type = "sale_completed"
-                event_key = f"sale:{state['id']}"
-                context = {"nome": name, "descricao": description, "valor_venda": value}
+                state_candidates.append((created_at, "sale_completed", f"sale:{state['id']}"))
             elif state_type == "VENDA_NAO_REALIZADA":
-                eligible_at = created_at + timedelta(days=5)
-                followup_type = "sale_lost"
-                event_key = f"lost:{state['id']}"
-                context = {"nome": name, "descricao": description, "valor_venda": value}
-            elif state_type == "PROPOSTA" and state.get("status") == "ABERTO":
-                eligible_at = created_at + timedelta(days=1)
-                followup_type = "proposal_no_reply"
-                event_key = f"proposal:{state['id']}"
-                context = {"nome": name, "descricao": description, "valor_venda": value}
-            else:
-                continue
-            if cursor < eligible_at <= now:
-                candidates.append({
-                    "event_key": event_key, "followup_type": followup_type,
-                    "client_id": int(client_id), "customer_name": name, "phone": phone,
-                    "title": FOLLOWUP_TYPES[followup_type]["title"],
-                    "description": FOLLOWUP_TYPES[followup_type]["description"],
-                    "context": context, "due_at": eligible_at,
-                })
+                state_candidates.append((created_at + timedelta(days=5), "sale_lost", f"lost:{state['id']}"))
+            elif state_type == "PROPOSTA" and state_status == "ABERTO":
+                # O envio do orçamento é imediato; o lembrete por falta de resposta vem após 1 dia.
+                state_candidates.append((created_at, "proposal_created", f"proposal-created:{state['id']}"))
+                state_candidates.append((created_at + timedelta(days=1), "proposal_no_reply", f"proposal-no-reply:{state['id']}"))
+            elif state_type in {"CONTATO", "INTERESSADO", "DESINTERESSADO"} and state_status == "ABERTO":
+                state_candidates.append((created_at + timedelta(days=2), "client_stage_idle", f"stage-idle:{state['id']}"))
+            for eligible_at, followup_type, event_key in state_candidates:
+                if cursor < eligible_at <= now:
+                    candidates.append({
+                        "event_key": event_key, "followup_type": followup_type,
+                        "client_id": int(client_id), "customer_name": name, "phone": phone,
+                        "title": FOLLOWUP_TYPES[followup_type]["title"],
+                        "description": FOLLOWUP_TYPES[followup_type]["description"],
+                        "context": context, "due_at": eligible_at,
+                    })
 
     today_local = datetime.now(LOCAL_TZ).date()
     for payment in payments:

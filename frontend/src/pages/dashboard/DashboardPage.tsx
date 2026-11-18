@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import {
   Activity,
   Users,
-  Clock,
   CalendarClock,
   AlertCircle,
   CheckCircle,
@@ -11,7 +10,6 @@ import {
   CreditCard,
 } from 'lucide-react';
 
-import { useAuth } from '@/providers/AuthProvider';
 import { api } from '@/lib/api';
 import { StatCard } from '@/components/ui/StatCard';
 import { Card, CardBody } from '@/components/ui/Card';
@@ -69,8 +67,6 @@ interface Cliente {
 }
 
 export default function DashboardPage() {
-  const { user } = useAuth();
-
   const [data, setData] = useState<DashboardAcompanhamento>({
     estados_abertos: [],
     pagamentos: [],
@@ -308,11 +304,11 @@ export default function DashboardPage() {
       <div className="flex items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-surface-900 dark:text-white">
-            Olá, {user?.full_name?.split(' ')[0] || 'bem-vindo'}! 👋
+            Acompanhamento manual
           </h1>
 
           <p className="text-surface-500 dark:text-white/60 mt-1">
-            Acompanhe os clientes e pagamentos que precisam da sua atenção.
+            Acompanhe manualmente clientes, etapas e pagamentos que precisam de ação.
           </p>
         </div>
 
@@ -415,7 +411,7 @@ export default function DashboardPage() {
                     <p className="text-sm text-surface-500 mt-1">{followup.descricao}</p>
                   </div>
                   <div className="flex items-center justify-between border-t border-surface-200 dark:border-surface-700 pt-3">
-                    <span className="text-xs text-surface-500">Cliente #{followup.client_id}</span>
+                    <span className="text-xs text-surface-500">{followup.telefone || 'Contato não informado'}</span>
                     <button
                       onClick={() => dispensarFollowup(followup)}
                       disabled={actionLoading === `followup-${followup.key}`}

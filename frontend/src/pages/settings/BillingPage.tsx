@@ -61,20 +61,11 @@ const PLANOS_PADRAO: Plan[] = [
       { name: 'Edição de clientes cadastrados', included: true },
       { name: 'Registro do relacionamento com os clientes', included: true },
       { name: 'Análise de estatísticas', included: true },
+      { name: 'Conexão com WhatsApp pelo QR Code', included: true },
+      { name: 'Mensagens de follow-up personalizadas', included: true },
+      { name: 'Envio automático de cobranças e follow-ups', included: true },
+      { name: 'Histórico de mensagens enviadas', included: true },
       { name: 'Suporte prioritário', included: true },
-    ],
-  },
-  {
-    name: 'enterprise',
-    display_name: 'Enterprise',
-    price_monthly: 99,
-    purchasable: false,
-    is_popular: false,
-    features: [
-      { name: 'Clientes ilimitados', included: true },
-      { name: 'Tudo do plano Pro', included: true },
-      { name: 'Painel administrativo', included: true },
-      { name: 'SLA garantido', included: true },
     ],
   },
 ];
@@ -320,7 +311,7 @@ export default function BillingPage() {
       </Card>
 
       {/* Planos */}
-      <div className="grid md:grid-cols-3 gap-6">
+      <div className="grid md:grid-cols-2 gap-6">
         {plans.map((plan) => (
           <Card key={plan.name} className={plan.is_popular ? 'ring-2 ring-brand-500' : ''}>
             <CardBody className="space-y-4">

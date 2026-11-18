@@ -662,9 +662,7 @@ export default function CRMPage() {
                           <h3 className="truncate font-semibold text-surface-900 dark:text-white">
                             {cliente.nome || 'Cliente sem nome'}
                           </h3>
-                          <p className="text-xs text-surface-500 dark:text-white/40">
-                            Cliente #{cliente.id}
-                          </p>
+
                         </div>
                       </div>
 

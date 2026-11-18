@@ -49,20 +49,11 @@ PLANS: dict[str, PlanDefinition] = {
             ("Edição de clientes cadastrados", True),
             ("Registro do relacionamento com os clientes", True),
             ("Análise de estatísticas", True),
+            ("Conexão com WhatsApp pelo QR Code", True),
+            ("Mensagens de follow-up personalizadas", True),
+            ("Envio automático de cobranças e follow-ups", True),
+            ("Histórico de mensagens enviadas", True),
             ("Suporte prioritário", True),
-        ),
-    ),
-    "enterprise": PlanDefinition(
-        name="enterprise",
-        display_name="Enterprise",
-        price_monthly=Decimal("99.00"),
-        purchasable=False,  # indisponível até ser configurado
-        is_popular=False,
-        features=(
-            ("Clientes ilimitados", True),
-            ("Tudo do plano Pro", True),
-            ("Painel administrativo", True),
-            ("SLA garantido", True),
         ),
     ),
 }
