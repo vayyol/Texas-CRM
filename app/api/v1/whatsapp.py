@@ -240,6 +240,11 @@ async def receive_waha_webhook(
     if not isinstance(chat_id, str) or not chat_id:
         return {"received": True, "ignored": True}
 
+    # Grupos não fazem parte da central individual do TexasCRM.
+    # O filtro também impede que mensagens enviadas para grupos sejam importadas.
+    if chat_id.endswith("@g.us"):
+        return {"received": True, "ignored": True, "reason": "group"}
+
     duplicate = await db.execute(select(WhatsAppMessage.id).where(WhatsAppMessage.waha_message_id == message_id))
     if duplicate.scalar_one_or_none():
         return {"received": True, "duplicate": True}
@@ -295,7 +300,10 @@ async def list_whatsapp_conversations(
 ):
     result = await db.execute(
         select(WhatsAppConversation)
-        .where(WhatsAppConversation.user_id == current_user.id)
+        .where(
+            WhatsAppConversation.user_id == current_user.id,
+            ~WhatsAppConversation.chat_id.like("%@g.us"),
+        )
         .order_by(WhatsAppConversation.last_message_at.desc().nullslast())
     )
     conversations = result.scalars().all()
