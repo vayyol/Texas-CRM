@@ -1,6 +1,8 @@
 ﻿"""Cliente HTTP privado para o serviÃ§o WAHA."""
 from __future__ import annotations
 
+import base64
+
 import httpx
 
 from app.config import settings
@@ -68,11 +70,42 @@ async def start_session(name: str) -> dict:
 
 
 async def get_qr(name: str) -> dict:
-    return await _request(
-        "GET",
-        f"/api/{name}/auth/qr?format=image",
-        headers={"Accept": "application/json"},
-    )
+    """Obtém o QR como imagem e o converte para o formato esperado pela API."""
+    base_url, api_key = _configuration()
+    try:
+        async with httpx.AsyncClient(timeout=25.0) as client:
+            response = await client.get(
+                f"{base_url}/api/{name}/auth/qr?format=image",
+                headers={"X-Api-Key": api_key, "Accept": "image/png"},
+            )
+            response.raise_for_status()
+
+            content_type = response.headers.get("content-type", "image/png").split(";", 1)[0]
+            if content_type.startswith("image/"):
+                return {
+                    "mimetype": content_type,
+                    "data": base64.b64encode(response.content).decode("ascii"),
+                }
+
+            # Compatibilidade com versões do WAHA que retornam JSON.
+            payload = response.json()
+            if isinstance(payload, dict):
+                image_data = payload.get("data") or payload.get("value")
+                if isinstance(image_data, str) and image_data:
+                    return {
+                        "mimetype": payload.get("mimetype", "image/png"),
+                        "data": image_data,
+                    }
+            raise WahaAPIError("WAHA não retornou uma imagem válida para o QR Code.")
+    except httpx.HTTPStatusError as exc:
+        raise WahaAPIError(
+            f"WAHA respondeu HTTP {exc.response.status_code}.",
+            status_code=exc.response.status_code,
+        ) from exc
+    except httpx.HTTPError as exc:
+        raise WahaAPIError("Não foi possível obter o QR Code do WAHA.") from exc
+    except ValueError as exc:
+        raise WahaAPIError("WAHA retornou uma resposta inválida para o QR Code.") from exc
 
 
 async def delete_session(name: str) -> None:

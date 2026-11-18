@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MessageCircle, Smartphone, AlertCircle, Loader2, CheckCircle2 } from 'lucide-react';
 import { apiGet, apiPost } from '@/lib/api';
@@ -22,6 +22,7 @@ export default function WhatsAppPage() {
   const [qr, setQr] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const connectionStartedAt = useRef<number | null>(null);
 
   const refreshStatus = useCallback(async () => {
     const data = await apiGet<WhatsAppStatus>('/api/v1/whatsapp/status');
@@ -59,9 +60,12 @@ export default function WhatsAppPage() {
           navigate('/followups', { replace: true });
           return;
         }
-        if (current.session && ['FAILED', 'STOPPED'].includes(current.session.status)) {
+        const elapsed = connectionStartedAt.current === null ? 0 : Date.now() - connectionStartedAt.current;
+        if (current.session?.status === 'FAILED' || (current.session?.status === 'STOPPED' && elapsed >= 20000)) {
           setConnecting(false);
-          setError('A conexão foi interrompida. Confira o estado da sessão e tente novamente.');
+          setError(current.session.status === 'FAILED'
+            ? 'O WAHA informou que a sessão falhou. Tente iniciar novamente.'
+            : 'A sessão permaneceu parada por 20 segundos. Confira o WAHA e tente novamente.');
           return;
         }
         if (current.session?.status !== 'SCAN_QR_CODE') return;
@@ -86,6 +90,7 @@ export default function WhatsAppPage() {
   const connect = async () => {
     if (connecting || status?.session?.status === 'WORKING') return;
     setConnecting(true);
+    connectionStartedAt.current = Date.now();
     setError('');
     setQr(null);
     try {
@@ -100,6 +105,7 @@ export default function WhatsAppPage() {
       const message = (err as { response?: { data?: { detail?: string } }; message?: string })?.response?.data?.detail
         || (err as { message?: string })?.message;
       setError(message || 'Não foi possível iniciar a conexão. Tente novamente.');
+      connectionStartedAt.current = null;
       setConnecting(false);
     }
   };
