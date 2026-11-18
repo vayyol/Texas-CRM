@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, MessageSquare, MessageCircle, FileText, Key, CreditCard, User, Shield, Users, ChevronLeft, ChevronRight } from 'lucide-react';
+import { LayoutDashboard, MessageSquare, MessageCircle, FileText, Key, CreditCard, User, Shield, Users, ChevronLeft, ChevronRight, BellRing } from 'lucide-react';
 import { useAuth } from '@/providers/AuthProvider';
 import { LogoMark } from '@/components/ui/Logo';
 
@@ -14,6 +14,7 @@ const navItems = [
   { path: '/clientes', label: 'Clientes', icon: Users },//new
   { path: '/crm', label: 'CRM', icon: FileText },//new
   { path: '/whatsapp', label: 'WhatsApp', icon: MessageCircle },
+  { path: '/followups', label: 'Cobranças e follow-ups', icon: BellRing },
   { path: '/settings/billing', label: 'Assinatura', icon: CreditCard },
   { path: '/settings/profile', label: 'Perfil', icon: User },
   // { path: '/chat', label: 'AI Chat', icon: MessageSquare },

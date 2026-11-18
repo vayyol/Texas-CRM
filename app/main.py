@@ -2,6 +2,7 @@
 AI SaaS Starter Kit — FastAPI Application Entry Point
 """
 
+import asyncio
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
@@ -18,9 +19,15 @@ from app.database import engine
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Manage application startup and shutdown."""
-    # Startup
+    from app.services.whatsapp_followups import followup_scheduler
+
+    scheduler_task = asyncio.create_task(followup_scheduler())
     yield
-    # Shutdown
+    scheduler_task.cancel()
+    try:
+        await scheduler_task
+    except asyncio.CancelledError:
+        pass
     await engine.dispose()
 
 

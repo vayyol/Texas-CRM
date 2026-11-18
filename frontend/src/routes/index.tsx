@@ -21,6 +21,7 @@ import BillingPage from '@/pages/settings/BillingPage';
 import CustomersPage from '@/pages/customers/CustomersPage';
 import CRMPage from '@/pages/crm/CRMPage';
 import WhatsAppPage from '@/pages/whatsapp/WhatsAppPage';
+import FollowupsPage from '@/pages/followups/FollowupsPage';
 
 // Admin pages
 import AdminDashboardPage from '@/pages/admin/AdminDashboardPage';
@@ -66,6 +67,7 @@ export const router = createBrowserRouter([
           { path: '/clientes', element: <CustomersPage /> },//new
           { path: '/crm', element: <CRMPage /> },//new
           { path: '/whatsapp', element: <WhatsAppPage /> },
+          { path: '/followups', element: <FollowupsPage /> },
 
           // ── Admin Routes ──────────────────
           {

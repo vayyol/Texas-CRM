@@ -4,13 +4,14 @@ Aggregate all v1 API routers.
 
 from fastapi import APIRouter
 
-from app.api.v1 import admin, api_keys, auth, chat, integracao, subscriptions, templates, users, whatsapp
+from app.api.v1 import admin, api_keys, auth, chat, followups, integracao, subscriptions, templates, users, whatsapp
 
 api_router = APIRouter()
 
 api_router.include_router(auth.router, prefix="/auth", tags=["Authentication"])
 api_router.include_router(users.router, prefix="/users", tags=["Users"])
 api_router.include_router(whatsapp.router, prefix="/whatsapp", tags=["WhatsApp"])
+api_router.include_router(followups.router, prefix="/followups", tags=["Cobranças e follow-ups"])
 api_router.include_router(chat.router, prefix="/chat", tags=["Chat"])
 api_router.include_router(templates.router, prefix="/templates", tags=["Templates"])
 api_router.include_router(subscriptions.router, prefix="/subscriptions", tags=["Subscriptions"])
