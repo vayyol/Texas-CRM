@@ -71,21 +71,7 @@ async def get_whatsapp_status(
     consent = consent_result.scalar_one_or_none()
     session_result = await db.execute(select(WhatsAppSession).where(WhatsAppSession.user_id == current_user.id))
     session = session_result.scalar_one_or_none()
-    if session is not None:
-        if not session.provider_token_encrypted:
-            session.status = "STOPPED"
-        else:
-            try:
-                remote = await uazapi_client.status(decrypt_token(session.provider_token_encrypted))
-                remote_status = remote.get("status")
-                if isinstance(remote_status, str):
-                    session.status = {"connected": "WORKING", "connecting": "SCAN_QR_CODE", "disconnected": "STOPPED", "hibernated": "STOPPED"}.get(remote_status.lower(), remote_status.upper())
-                owner = remote.get("owner") or remote.get("phone")
-                if isinstance(owner, str):
-                    session.phone_number = owner.split("@", 1)[0]
-                await db.flush()
-            except (uazapi_client.UazapiAPIError, RuntimeError):
-                pass
+    # O status da sessão é atualizado pelos webhooks da UazapiGO.
     return {
         "integration_configured": bool(settings.UAZAPI_ADMIN_TOKEN.get_secret_value()),
         "terms_version": settings.WHATSAPP_TERMS_VERSION,
@@ -203,12 +189,10 @@ async def get_whatsapp_qr(
     if session is None:
         raise HTTPException(status_code=404, detail="Nenhuma sessão WhatsApp foi criada.")
     try:
-        token = await _ensure_uazapi_instance(session)
-        qr = await uazapi_client.qr(token)
-        value = qr.get("data") or session.qr_data
+        value = session.qr_data
         if not value:
-            raise HTTPException(status_code=409, detail="QR Code ainda não disponível. Aguarde alguns segundos.")
-        return {"mimetype": qr.get("mimetype", "image/png"), "data": value}
+            raise HTTPException(status_code=409, detail="QR Code ainda não disponível. Inicie a conexão novamente.")
+        return {"mimetype": "image/png", "data": value}
     except uazapi_client.UazapiNotConfiguredError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     except uazapi_client.UazapiAPIError as exc:

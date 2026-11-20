@@ -23,6 +23,7 @@ export default function WhatsAppPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const connectionStartedAt = useRef<number | null>(null);
+  const qrRequested = useRef(false);
 
   const refreshStatus = useCallback(async () => {
     const data = await apiGet<WhatsAppStatus>('/api/v1/whatsapp/status');
@@ -68,12 +69,13 @@ export default function WhatsAppPage() {
             : 'A sessão permaneceu parada por 20 segundos. Tente iniciar novamente.');
           return;
         }
-        if (current.session?.status !== 'SCAN_QR_CODE') return;
+        if (current.session?.status !== 'SCAN_QR_CODE' || qrRequested.current) return;
+        qrRequested.current = true;
         try {
           const data = await apiGet<{ mimetype: string; data: string }>('/api/v1/whatsapp/session/qr');
           if (active) setQr(`data:${data.mimetype};base64,${data.data}`);
         } catch {
-          // A UazapiGO pode demorar alguns segundos para disponibilizar o QR Code.
+          // Uma única consulta do QR por tentativa de conexão.
         }
       } catch {
         if (active) {
@@ -83,7 +85,7 @@ export default function WhatsAppPage() {
       }
     };
     void poll();
-    const timer = window.setInterval(poll, 2500);
+    const timer = window.setInterval(poll, 5000);
     return () => { active = false; window.clearInterval(timer); };
   }, [connecting, refreshStatus, navigate]);
 
@@ -93,6 +95,7 @@ export default function WhatsAppPage() {
     connectionStartedAt.current = Date.now();
     setError('');
     setQr(null);
+    qrRequested.current = false;
     try {
       if (!status?.terms_accepted) {
         if (!accepted || !terms) throw new Error('Leia e aceite o termo para continuar.');
