@@ -13,7 +13,8 @@ from app.core.dependencies import get_current_active_user
 from app.database import get_db
 from app.models.whatsapp import WhatsAppSession
 from app.models.whatsapp_followup import WhatsAppFollowupRecord
-from app.services import waha_client
+from app.services import uazapi_client
+from app.services.whatsapp_tokens import decrypt_token
 from app.services.whatsapp_followups import (
     FOLLOWUP_TYPES,
     ensure_user_defaults,
@@ -43,15 +44,19 @@ async def get_followups_page(
     )
     session = session_result.scalar_one_or_none()
     if session is not None:
-        try:
-            remote = await waha_client.get_session(session.session_name)
-            if isinstance(remote, dict) and isinstance(remote.get("status"), str):
-                session.status = remote["status"]
-                me = remote.get("me")
-                if isinstance(me, dict) and isinstance(me.get("id"), str):
-                    session.phone_number = me["id"].split("@", 1)[0]
-        except (waha_client.WahaAPIError, waha_client.WahaNotConfiguredError):
-            pass
+        if session.provider_token_encrypted:
+            try:
+                remote = await uazapi_client.status(decrypt_token(session.provider_token_encrypted))
+                remote_status = remote.get("status")
+                if isinstance(remote_status, str):
+                    session.status = {"connected": "WORKING", "connecting": "SCAN_QR_CODE", "disconnected": "STOPPED", "hibernated": "STOPPED"}.get(remote_status.lower(), remote_status.upper())
+                owner = remote.get("owner") or remote.get("phone")
+                if isinstance(owner, str):
+                    session.phone_number = owner.split("@", 1)[0]
+            except (uazapi_client.UazapiAPIError, RuntimeError):
+                pass
+        else:
+            session.status = "STOPPED"
     records_result = await db.execute(
         select(WhatsAppFollowupRecord)
         .where(WhatsAppFollowupRecord.user_id == current_user.id)
@@ -115,15 +120,16 @@ async def update_followup_setting(
         )
         session = session_result.scalar_one_or_none()
         if session is not None:
-            try:
-                remote = await waha_client.get_session(session.session_name)
-                if isinstance(remote, dict) and isinstance(remote.get("status"), str):
-                    session.status = remote["status"]
-            except (waha_client.WahaAPIError, waha_client.WahaNotConfiguredError) as exc:
-                raise HTTPException(
-                    status_code=503,
-                    detail="Não foi possível confirmar a conexão do WhatsApp.",
-                ) from exc
+            if session.provider_token_encrypted:
+                try:
+                    remote = await uazapi_client.status(decrypt_token(session.provider_token_encrypted))
+                    remote_status = remote.get("status")
+                    if isinstance(remote_status, str):
+                        session.status = {"connected": "WORKING", "connecting": "SCAN_QR_CODE", "disconnected": "STOPPED", "hibernated": "STOPPED"}.get(remote_status.lower(), remote_status.upper())
+                except (uazapi_client.UazapiAPIError, RuntimeError) as exc:
+                    raise HTTPException(status_code=503, detail="Não foi possível confirmar a conexão do WhatsApp.") from exc
+            else:
+                session.status = "STOPPED"
         if session is None or session.status != "WORKING":
             raise HTTPException(status_code=409, detail="Conecte o WhatsApp antes de ativar a automação.")
         setting.auto_enabled_at = datetime.now(timezone.utc)

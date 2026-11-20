@@ -3,7 +3,7 @@ import pytest
 from httpx import AsyncClient
 
 from app.config import settings
-from app.services import waha_client
+from app.services import uazapi_client
 
 
 async def _register(client: AsyncClient) -> str:
@@ -49,13 +49,12 @@ async def test_accept_terms_and_create_session(client: AsyncClient, monkeypatch)
     assert accepted.status_code == 200
     assert accepted.json()["accepted"] is True
 
-    async def fake_create_session(name: str):
-        return {"name": name, "status": "STOPPED"}
+    async def fake_create_instance(name: str):
+        return {"name": name, "status": "STOPPED", "token": "test-instance-token"}
 
-    monkeypatch.setattr(waha_client, "create_session", fake_create_session)
-    monkeypatch.setattr(settings, "WAHA_BASE_URL", "https://waha.example")
+    monkeypatch.setattr(uazapi_client, "create_instance", fake_create_instance)
     from pydantic import SecretStr
-    monkeypatch.setattr(settings, "WAHA_API_KEY", SecretStr("test-key"))
+    monkeypatch.setattr(settings, "UAZAPI_ADMIN_TOKEN", SecretStr("test-admin-token"))
 
     created = await client.post("/api/v1/whatsapp/session", headers=headers)
     assert created.status_code == 201

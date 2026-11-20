@@ -19,7 +19,8 @@ from app.models.whatsapp_followup import (
     WhatsAppFollowupRecord,
     WhatsAppFollowupSetting,
 )
-from app.services import waha_client
+from app.services import uazapi_client
+from app.services.whatsapp_tokens import decrypt_token
 
 logger = logging.getLogger(__name__)
 LOCAL_TZ = timezone(timedelta(hours=-3))  # Horário de Brasília (sem horário de verão)
@@ -264,9 +265,11 @@ async def send_record(db: AsyncSession, record: WhatsAppFollowupRecord, message:
     if not text:
         return False, "A mensagem não pode estar vazia."
     chat_id = f"{phone}@c.us"
+    if not session.provider_token_encrypted:
+        return False, "A sessão UazapiGO ainda não foi inicializada. Reconecte o WhatsApp."
     try:
-        remote = await waha_client.send_text(session.session_name, chat_id, text)
-    except (waha_client.WahaAPIError, waha_client.WahaNotConfiguredError) as exc:
+        remote = await uazapi_client.send_text(decrypt_token(session.provider_token_encrypted), phone, text)
+    except (uazapi_client.UazapiAPIError, uazapi_client.UazapiNotConfiguredError, RuntimeError) as exc:
         record.status = "failed"
         record.auto_send_pending = False
         record.error = str(exc)
@@ -292,7 +295,7 @@ async def send_record(db: AsyncSession, record: WhatsAppFollowupRecord, message:
     message_id = remote.get("id") if isinstance(remote, dict) else None
     db.add(WhatsAppMessage(
         user_id=record.user_id, conversation_id=conversation.id,
-        waha_message_id=message_id if isinstance(message_id, str) else None,
+        provider_message_id=message_id if isinstance(message_id, str) else None,
         direction="out", body=text, message_type="text", status="sent", sent_at=sent_at,
     ))
     conversation.last_message_at = sent_at

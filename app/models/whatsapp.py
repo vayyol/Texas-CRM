@@ -25,7 +25,6 @@ class WhatsAppSession(Base):
 
     user_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=False, index=True)
     session_name: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
-    provider: Mapped[str] = mapped_column(String(20), default="waha", nullable=False)
     provider_token_encrypted: Mapped[str | None] = mapped_column(Text, nullable=True)
     provider_instance_id: Mapped[str | None] = mapped_column(String(120), nullable=True)
     qr_data: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -55,7 +54,7 @@ class WhatsAppMessage(Base):
 
     user_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     conversation_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("whatsapp_conversations.id", ondelete="CASCADE"), nullable=False, index=True)
-    waha_message_id: Mapped[str | None] = mapped_column(String(255), unique=True, nullable=True)
+    provider_message_id: Mapped[str | None] = mapped_column(String(255), unique=True, nullable=True)
     direction: Mapped[str] = mapped_column(String(10), nullable=False)
     body: Mapped[str] = mapped_column(Text, nullable=False)
     message_type: Mapped[str] = mapped_column(String(30), default="text", nullable=False)

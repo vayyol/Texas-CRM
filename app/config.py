@@ -55,10 +55,7 @@ class Settings(BaseSettings):
     ASAAS_WEBHOOK_TOKEN: SecretStr = SecretStr("")
     ASAAS_CHECKOUT_MINUTES_TO_EXPIRE: int = 60  # o Asaas aceita de 10 a 1440
 
-    # ── WhatsApp via serviço WAHA independente ──────────────
-    WAHA_BASE_URL: str = ""
-    WAHA_API_KEY: SecretStr = SecretStr("")
-    WHATSAPP_PROVIDER: str = "waha"  # waha | uazapi
+    # ── WhatsApp via UazapiGO ────────────────────────────────
     UAZAPI_BASE_URL: str = "https://free.uazapi.com"
     UAZAPI_ADMIN_TOKEN: SecretStr = SecretStr("")
     WHATSAPP_TERMS_VERSION: str = "1.0"

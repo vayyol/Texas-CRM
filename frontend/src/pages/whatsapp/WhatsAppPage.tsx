@@ -64,8 +64,8 @@ export default function WhatsAppPage() {
         if (current.session?.status === 'FAILED' || (current.session?.status === 'STOPPED' && elapsed >= 20000)) {
           setConnecting(false);
           setError(current.session.status === 'FAILED'
-            ? 'O WAHA informou que a sessão falhou. Tente iniciar novamente.'
-            : 'A sessão permaneceu parada por 20 segundos. Confira o WAHA e tente novamente.');
+            ? 'A UazapiGO informou que a sessão falhou. Tente iniciar novamente.'
+            : 'A sessão permaneceu parada por 20 segundos. Tente iniciar novamente.');
           return;
         }
         if (current.session?.status !== 'SCAN_QR_CODE') return;
@@ -73,7 +73,7 @@ export default function WhatsAppPage() {
           const data = await apiGet<{ mimetype: string; data: string }>('/api/v1/whatsapp/session/qr');
           if (active) setQr(`data:${data.mimetype};base64,${data.data}`);
         } catch {
-          // O WAHA pode demorar alguns segundos para disponibilizar o QR Code.
+          // A UazapiGO pode demorar alguns segundos para disponibilizar o QR Code.
         }
       } catch {
         if (active) {
