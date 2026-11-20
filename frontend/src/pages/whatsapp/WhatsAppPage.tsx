@@ -73,7 +73,12 @@ export default function WhatsAppPage() {
         qrRequested.current = true;
         try {
           const data = await apiGet<{ mimetype: string; data: string }>('/api/v1/whatsapp/session/qr');
-          if (active) setQr(`data:${data.mimetype};base64,${data.data}`);
+          if (active) {
+            const qrSource = data.data.startsWith('data:')
+              ? data.data
+              : `data:${data.mimetype};base64,${data.data}`;
+            setQr(qrSource);
+          }
         } catch {
           // Uma única consulta do QR por tentativa de conexão.
         }
