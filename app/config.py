@@ -58,6 +58,9 @@ class Settings(BaseSettings):
     # ── WhatsApp via serviço WAHA independente ──────────────
     WAHA_BASE_URL: str = ""
     WAHA_API_KEY: SecretStr = SecretStr("")
+    WHATSAPP_PROVIDER: str = "waha"  # waha | uazapi
+    UAZAPI_BASE_URL: str = "https://free.uazapi.com"
+    UAZAPI_ADMIN_TOKEN: SecretStr = SecretStr("")
     WHATSAPP_TERMS_VERSION: str = "1.0"
     WHATSAPP_WEBHOOK_URL: str = "https://texas-crm.onrender.com/api/v1/whatsapp/webhook"
 

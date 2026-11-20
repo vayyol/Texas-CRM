@@ -25,6 +25,10 @@ class WhatsAppSession(Base):
 
     user_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=False, index=True)
     session_name: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
+    provider: Mapped[str] = mapped_column(String(20), default="waha", nullable=False)
+    provider_token_encrypted: Mapped[str | None] = mapped_column(Text, nullable=True)
+    provider_instance_id: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    qr_data: Mapped[str | None] = mapped_column(Text, nullable=True)
     status: Mapped[str] = mapped_column(String(30), default="STOPPED", nullable=False)
     phone_number: Mapped[str | None] = mapped_column(String(30), nullable=True)
     connected_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
